@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Prototipado | Universidad Nacional de Colombia</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="index.css">
+    
+    <!-- JS Libraries (Local para funcionamiento sin internet en taller) -->
+    <script src="three.min.js"></script>
+    <script src="html5-qrcode.min.js"></script>
+    <script src="qrcode.min.js"></script>
+    
+    <!-- Lógica de la Aplicación -->
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <!-- Background grid effect -->
+    <div class="space-background"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- 1. SPLASH SCREEN (Welcome) -->
+    <section id="splash-screen" class="view-section active">
+        <div class="splash-container">
+            <div class="splash-logo">
+                <div class="logo-circle">
+                    <i class="fa-solid fa-cube fa-beat"></i>
+                </div>
+            </div>
+            <div class="splash-titles">
+                <span class="institution">UNIVERSIDAD NACIONAL DE COLOMBIA</span>
+                <span class="campus">SEDE MANIZALES</span>
+                <h1 class="main-title">Centro de Prototipado</h1>
+                <p class="subtitle">Asistente de Realidad Aumentada & Manuales Interactivos</p>
+            </div>
+            
+            <div class="instruction-box">
+                <p><i class="fa-solid fa-camera"></i> Escanea las etiquetas QR de las máquinas para ver hologramas 3D, manuales de operación y mantenimiento en tiempo real.</p>
+            </div>
+
+            <button id="btn-start" class="btn btn-primary btn-glow">
+                <span>INICIAR SISTEMA</span>
+                <i class="fa-solid fa-circle-play"></i>
+            </button>
+        </div>
+        <div class="splash-footer">
+            <p>Laboratorio de Ingeniería y Prototipado &copy; 2026</p>
+        </div>
+    </section>
+
+    <!-- MAIN APP CONTAINER (Hidden on load) -->
+    <div id="app-container" class="hidden">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-logo">
+                <i class="fa-solid fa-compass-drafting logo-icon"></i>
+                <div class="logo-text">
+                    <span class="header-title">AR PROTOTIPADO</span>
+                    <span class="header-sub">UNAL Sede Manizales</span>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <button id="nav-btn-scan" class="nav-item active" data-target="scan-view">
+                    <i class="fa-solid fa-expand"></i>
+                    <span>Escanear</span>
+                </button>
+                <button id="nav-btn-explore" class="nav-item" data-target="explore-view">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Equipos</span>
+                </button>
+                <button id="nav-btn-admin" class="nav-item" data-target="admin-view">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Etiquetas QR</span>
+                </button>
+            </nav>
+        </header>
+
+        <!-- VIEW: AR SCANNER -->
+        <section id="scan-view" class="app-view active">
+            <div class="scanner-container">
+                <!-- Live Video Feed Elements -->
+                <div class="video-wrapper">
+                    <div id="qr-reader" class="camera-stream"></div>
+                    
+                    <!-- HUD Scan Mask -->
+                    <div class="hud-overlay">
+                        <div class="hud-corner top-left"></div>
+                        <div class="hud-corner top-right"></div>
+                        <div class="hud-corner bottom-left"></div>
+                        <div class="hud-corner bottom-right"></div>
+                        
+                        <div class="hud-target-ring"></div>
+                        <div class="hud-scanner-line"></div>
+                        
+                        <div class="hud-status">
+                            <span class="pulse-indicator"></span>
+                            <span class="hud-status-text">ESCANER AR ACTIVO - APUNTE AL QR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scanner Controls (Floating) -->
+                <div class="scanner-controls">
+                    <button id="btn-toggle-camera" class="ctrl-btn" title="Cambiar Cámara">
+                        <i class="fa-solid fa-camera-rotate"></i>
+                    </button>
+                    <button id="btn-toggle-flashlight" class="ctrl-btn hidden" title="Linterna">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </button>
+                    <button id="btn-open-simulate" class="ctrl-btn highlight" title="Simular Escaneo">
+                        <i class="fa-solid fa-laptop-code"></i>
+                        <span class="ctrl-btn-label">Simular QR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simulation Modal -->
+            <div id="simulation-modal" class="modal hidden">
+                <div class="modal-content glassmorphism">
+                    <div class="modal-header">
+                        <h3><i class="fa-solid fa-network-wired"></i> Simular Detección AR</h3>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-instruction">Selecciona un equipo del Centro de Prototipado para simular que escaneaste su etiqueta QR en el taller:</p>
+                        <div class="simulation-list">
+                            <button class="sim-option" data-id="ender3">
+                                <i class="fa-solid fa-cube"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">Impresora 3D Ender V3</span>
+                                    <span class="sim-type">Fusión de Filamento (FDM)</span>
+                                </div>
+                            </button>
+                            <button class="sim-option" data-id="laser">
+                                <i class="fa-solid fa-bolt"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">Cortadora Láser CO2</span>
+                                    <span class="sim-type">Corte y Grabado</span>
+                                </div>
+                            </button>
+                            <button class="sim-option" data-id="plotter">
+                                <i class="fa-solid fa-print"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">Plotter de Impresión y Corte</span>
+                                    <span class="sim-type">Formato Ancho</span>
+                                </div>
+                            </button>
+                            <button class="sim-option" data-id="resin">
+                                <i class="fa-solid fa-flask"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">Anycubic Photon 2</span>
+                                    <span class="sim-type">Impresora de Resina (SLA)</span>
+                                </div>
+                            </button>
+                            <button class="sim-option" data-id="robotic-arm">
+                                <i class="fa-solid fa-robot"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">Brazo Robótico Industrial</span>
+                                    <span class="sim-type">Automatización</span>
+                                </div>
+                            </button>
+                            <button class="sim-option" data-id="cnc">
+                                <i class="fa-solid fa-screwdriver-wrench"></i>
+                                <div class="sim-option-info">
+                                    <span class="sim-name">CNC 3018 Router</span>
+                                    <span class="sim-type">Fresado y Grabado</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AR HOLOGRAPHIC OVERLAY VIEW (Fades in over camera when machine detected) -->
+            <div id="ar-overlay-view" class="hidden">
+                <!-- 3D Hologram Area -->
+                <div id="hologram-canvas-container">
+                    <div class="hologram-indicator">
+                        <div class="hologram-glitch-text">CONEXIÓN HOLOGRÁFICA ESTABLE</div>
+                        <div class="hologram-sub-text">Gira la representación táctilmente</div>
+                    </div>
+                </div>
+
+                <!-- Floating Hologram Panel -->
+                <div class="ar-hud-panel glassmorphism">
+                    <button class="close-ar-panel">&times; CERRAR AR</button>
+                    
+                    <div class="hud-machine-header">
+                        <div class="hud-machine-badge" id="machine-badge-category">FDM PRINT</div>
+                        <h2 id="machine-hud-name">Ender V3 3D Printer</h2>
+                        <p id="machine-hud-desc" class="machine-short-description"></p>
+                    </div>
+
+                    <!-- Panel Tabs -->
+                    <div class="hud-tabs">
+                        <button class="hud-tab-btn active" data-tab="tab-specs">
+                            <i class="fa-solid fa-circle-info"></i> Info
+                        </button>
+                        <button class="hud-tab-btn" data-tab="tab-usage">
+                            <i class="fa-solid fa-gears"></i> Operación
+                        </button>
+                        <button class="hud-tab-btn" data-tab="tab-maintenance">
+                            <i class="fa-solid fa-wrench"></i> Mant.
+                        </button>
+                        <button class="hud-tab-btn" data-tab="tab-status">
+                            <i class="fa-solid fa-clipboard-question"></i> Reporte
+                        </button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="hud-tab-content">
+                        <!-- TAB: SPECS -->
+                        <div id="tab-specs" class="tab-pane active">
+                            <div class="specs-grid">
+                                <div class="spec-card">
+                                    <span class="spec-label">Materiales Permitidos</span>
+                                    <span class="spec-val" id="spec-materials">PLA, PETG, TPU</span>
+                                </div>
+                                <div class="spec-card">
+                                    <span class="spec-label">Área de Trabajo</span>
+                                    <span class="spec-val" id="spec-area">220 x 220 x 250 mm</span>
+                                </div>
+                            </div>
+                            
+                            <h4 class="section-subtitle">Características Clave</h4>
+                            <ul class="bullet-list" id="machine-features-list">
+                                <li>Tecnología de modelado por deposición fundida (FDM).</li>
+                                <li>Nivelación automática CR-Touch de precisión.</li>
+                                <li>Extrusor directo de doble engranaje "Sprite".</li>
+                            </ul>
+                        </div>
+
+                        <!-- TAB: USAGE -->
+                        <div id="tab-usage" class="tab-pane">
+                            <h4 class="section-subtitle">Guía de Operación Paso a Paso</h4>
+                            <ol class="step-list" id="machine-usage-steps">
+                                <li><strong>Encendido:</strong> Conecte el interruptor principal trasero.</li>
+                                <li><strong>Precalentamiento:</strong> Limpie la cama magnética y configure las temperaturas para el material correspondiente.</li>
+                                <li><strong>Preparación de Archivo:</strong> Utilice el software Creality Print para laminar el archivo STL y exportar el G-code en la tarjeta SD.</li>
+                                <li><strong>Inicio de Impresión:</strong> Inserte la tarjeta y seleccione el archivo en el panel táctil.</li>
+                            </ol>
+                            <div class="alert-banner warning">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span><strong>Seguridad:</strong> La boquilla alcanza los 260°C y la cama los 110°C. No toque durante el proceso.</span>
+                            </div>
+                        </div>
+
+                        <!-- TAB: MAINTENANCE -->
+                        <div id="tab-maintenance" class="tab-pane">
+                            <h4 class="section-subtitle">Mantenimiento Preventivo</h4>
+                            <p class="maintenance-intro">Completa el checklist antes y después de usar el equipo:</p>
+                            
+                            <div class="maintenance-checklist" id="machine-maintenance-checklist">
+                                <!-- Dynamic check items -->
+                            </div>
+                            
+                            <div class="maintenance-stats">
+                                <div class="stat-box">
+                                    <span class="stat-label">Último Mantenimiento</span>
+                                    <span class="stat-val" id="maint-last-date">Ayer - Técnico Centro</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Frecuencia General</span>
+                                    <span class="stat-val" id="maint-frequency">Cada 50h de uso</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: STATUS / FAULT REPORT -->
+                        <div id="tab-status" class="tab-pane">
+                            <h4 class="section-subtitle">Reportar Falla o Novedad</h4>
+                            <p class="fault-intro">¿El equipo presenta problemas mecánicos, ruidos extraños o requiere insumos? Registra el reporte aquí:</p>
+                            
+                            <form id="fault-report-form" class="hud-form">
+                                <div class="form-group">
+                                    <label for="report-user">Nombre Completo</label>
+                                    <input type="text" id="report-user" required placeholder="Tu nombre o código estudiantil">
+                                </div>
+                                <div class="form-group">
+                                    <label for="report-severity">Severidad de la Falla</label>
+                                    <select id="report-severity" required>
+                                        <option value="baja">Leve (Requiere calibración, ruidos menores)</option>
+                                        <option value="media">Moderada (Problemas de adhesión, falla extruyendo)</option>
+                                        <option value="alta">Grave (La máquina no enciende o está rota)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="report-desc">Descripción del Problema</label>
+                                    <textarea id="report-desc" required placeholder="Describe brevemente la anomalía observada..." rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-secondary btn-full">
+                                    <span>ENVIAR REPORTE AL TÉCNICO</span>
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </form>
+                            <div id="report-success-msg" class="alert-banner success hidden">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Reporte enviado con éxito. El equipo técnico del Centro ha sido notificado.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: EXPLORE EQUIPOS -->
+        <section id="explore-view" class="app-view hidden">
+            <div class="view-header">
+                <h2>Catálogo de Equipos</h2>
+                <p>Explora de forma directa la información técnica de los equipos del Centro de Prototipado.</p>
+            </div>
+            
+            <div class="equipos-grid" id="explore-equipos-list">
+                <!-- Cards injected dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- VIEW: ADMIN / QR LABELS GENERATOR -->
+        <section id="admin-view" class="app-view hidden">
+            <div class="view-header">
+                <h2>Generador de Etiquetas QR oficiales</h2>
+                <p>Genera e imprime etiquetas identificadoras para pegar físicamente en las máquinas del taller. Al escanearlas con esta aplicación, abrirán el HUD holográfico.</p>
+            </div>
+
+            <div class="admin-layout">
+                <!-- QR Generator Config -->
+                <div class="admin-card glassmorphism select-card">
+                    <h3>1. Selecciona el Equipo</h3>
+                    <div class="form-group">
+                        <select id="qr-select-machine">
+                            <!-- Injected dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="qr-app-url">URL de Despliegue de la App (para el código QR)</label>
+                        <input type="url" id="qr-app-url" value="" placeholder="https://mi-servidor.com/ar-app/">
+                        <small class="helper-text">Deja el valor actual o escribe la URL final donde hospedarás la aplicación.</small>
+                    </div>
+                    <button id="btn-print-tag" class="btn btn-primary btn-full">
+                        <i class="fa-solid fa-print"></i> Imprimir Etiqueta
+                    </button>
+                </div>
+
+                <!-- Live Print Tag Preview -->
+                <div class="admin-card glassmorphism preview-card">
+                    <h3>2. Vista Previa de la Etiqueta</h3>
+                    
+                    <div class="printable-tag-container">
+                        <div id="printable-tag" class="official-tag">
+                            <div class="tag-header">
+                                <div class="tag-header-main">
+                                    <span class="tag-inst">UNIVERSIDAD NACIONAL DE COLOMBIA</span>
+                                    <span class="tag-dept">Centro de Prototipado - Sede Manizales</span>
+                                </div>
+                                <div class="tag-header-badge">ID EQUIPO</div>
+                            </div>
+                            
+                            <div class="tag-body">
+                                <div class="tag-info">
+                                    <h2 id="tag-preview-title">CNC 3018 Router</h2>
+                                    <span id="tag-preview-category" class="tag-category">FRESADO & GRABADO</span>
+                                    <div class="tag-specs">
+                                        <p><strong>Uso:</strong> Prototipado rápido de circuitos (PCBs) y piezas en madera/acrílico blando.</p>
+                                        <p><strong>Ubicación:</strong> Taller General de Prototipado.</p>
+                                    </div>
+                                    <div class="tag-instructions">
+                                        <div class="inst-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                                        <div class="inst-text">Apunta la cámara de tu celular para abrir el manual interactivo en Realidad Aumentada.</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tag-qr-box">
+                                    <div id="tag-qrcode" class="tag-qrcode"></div>
+                                    <div class="tag-qr-footer">ESCANEAR AR</div>
+                                </div>
+                            </div>
+                            
+                            <div class="tag-footer">
+                                <span class="tag-security-alert"><i class="fa-solid fa-triangle-exclamation"></i> Requiere elementos de protección individual y capacitación.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- UI Overlay Sounds/Helper Elements -->
+    <div id="scanner-glow" class="scanner-glow-effect hidden"></div>
+</body>
+</html>
