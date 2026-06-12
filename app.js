@@ -279,20 +279,30 @@ function startSystem() {
     const appContainer = document.getElementById("app-container");
 
     splash.classList.remove("active");
-    
-    // Iniciar cámara inmediatamente para mantener el contexto de clic del usuario
-    // (requisito de getUserMedia en navegadores móviles)
-    startScanner();
 
+    // Mostrar el contenedor ANTES de iniciar la cámara
+    // para que #qr-reader tenga dimensiones reales en el DOM
+    appContainer.classList.remove("hidden");
+    appContainer.style.opacity = 0;
+
+    // Pedir permiso de cámara mientras aún estamos en el gesto del clic
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+        }).catch(() => {});
+    }
+
+    // Fade out del splash
     setTimeout(() => {
         splash.classList.add("hidden");
-        appContainer.classList.remove("hidden");
-        appContainer.style.opacity = 0;
         appContainer.style.transition = "opacity 0.5s ease";
-        setTimeout(() => {
-            appContainer.style.opacity = 1;
-        }, 50);
-    }, 300);
+        appContainer.style.opacity = 1;
+    }, 200);
+
+    // Iniciar escáner después de que el layout se renderice
+    setTimeout(() => {
+        startScanner();
+    }, 350);
 }
 
 function switchView(viewId) {
@@ -355,6 +365,12 @@ function startScanner() {
         return; // Ya está corriendo
     }
 
+    // Limpiar contenedor por si quedó algún elemento residual
+    const qrContainer = document.getElementById("qr-reader");
+    if (qrContainer) {
+        qrContainer.innerHTML = "";
+    }
+
     // qrbox responsive: más pequeño en móviles
     const isMobile = window.innerWidth < 580;
     const qrSize = isMobile ? Math.min(window.innerWidth * 0.5, 180) : 220;
@@ -370,47 +386,58 @@ function startScanner() {
             return;
         }
 
+        // 1. Enumerar cámaras en paralelo para el botón de cambiar cámara
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length > 0) {
                 activeCameras = devices;
-                // Buscar cámara trasera por defecto
-                let backCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear") || device.label.toLowerCase().includes("entorno"));
-                let selectedCamera = backCamera ? backCamera.id : devices[0].id;
-                currentCameraId = selectedCamera;
-
-                // Mostrar el control de cambiar cámara si hay más de una
+                currentCameraId = devices[0].id;
                 const toggleCamBtn = document.getElementById("btn-toggle-camera");
                 if (devices.length > 1) {
                     toggleCamBtn.style.display = "flex";
                 } else {
                     toggleCamBtn.style.display = "none";
                 }
+            }
+        }).catch(() => {});
 
+        // 2. Iniciar escáner con facingMode:environment (más confiable en móviles)
+        html5QrScanner = new Html5Qrcode("qr-reader");
+        html5QrScanner.start(
+            { facingMode: "environment" },
+            qrConfig,
+            onQrScanSuccess,
+            onQrScanFailure
+        ).then(() => {
+            try {
+                if (html5QrScanner.getRunningTrackCapabilities().torch) {
+                    document.getElementById("btn-toggle-flashlight").classList.remove("hidden");
+                }
+            } catch (e) {
+                console.warn("No se pudo verificar soporte de linterna: ", e);
+            }
+        }).catch(err => {
+            console.error("Error al iniciar lector de cámara: ", err);
+            // 3. Fallback: intentar con la primera cámara enumerada
+            if (activeCameras.length > 0) {
                 html5QrScanner = new Html5Qrcode("qr-reader");
                 html5QrScanner.start(
-                    selectedCamera, 
-                    qrConfig, 
-                    onQrScanSuccess, 
+                    activeCameras[0].id,
+                    qrConfig,
+                    onQrScanSuccess,
                     onQrScanFailure
                 ).then(() => {
-                    // Verificar si la linterna está disponible
                     try {
                         if (html5QrScanner.getRunningTrackCapabilities().torch) {
                             document.getElementById("btn-toggle-flashlight").classList.remove("hidden");
                         }
-                    } catch (e) {
-                        console.warn("No se pudo verificar soporte de linterna: ", e);
-                    }
-                }).catch(err => {
-                    console.error("Error al iniciar lector de cámara: ", err);
-                    fallbackNoCamera(err);
+                    } catch (e) { console.warn(e); }
+                }).catch(err2 => {
+                    console.error("Fallback de cámara también falló:", err2);
+                    fallbackNoCamera(err2);
                 });
             } else {
-                fallbackNoCamera("No devices found");
+                fallbackNoCamera(err);
             }
-        }).catch(err => {
-            console.error("Error al enumerar cámaras: ", err);
-            fallbackNoCamera(err);
         });
     } catch (e) {
         console.error("Falla crítica en startScanner: ", e);
