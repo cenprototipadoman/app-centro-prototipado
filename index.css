@@ -271,7 +271,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    min-height: 100vh;
+    min-height: 100dvh;
     padding: 40px 20px;
     text-align: center;
     z-index: 100;
@@ -365,7 +365,7 @@ body {
 #app-container {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .app-header {
@@ -402,9 +402,9 @@ body {
     font-weight: 800;
     font-size: 1.1rem;
     letter-spacing: 0.5px;
-    background: linear-gradient(90deg, #fff, var(--text-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    /* Texto blanco sólido - evita bugs de webkit-text-fill-color en Safari móvil */
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
 }
 
 .header-sub {
@@ -412,6 +412,25 @@ body {
     color: var(--cyan);
     font-weight: 700;
     letter-spacing: 1px;
+}
+
+/* En pantallas muy pequeñas, ocultar el texto del nav y mostrar solo iconos */
+@media (max-width: 400px) {
+    .header-title {
+        font-size: 0.95rem;
+    }
+    .header-sub {
+        font-size: 0.58rem;
+    }
+    .nav-item span {
+        display: none;
+    }
+    .nav-item {
+        padding: 8px 10px;
+    }
+    .app-header {
+        padding: 8px 12px;
+    }
 }
 
 .header-nav {
@@ -470,9 +489,55 @@ body {
    ------------------------------------------------------------- */
 #scan-view {
     padding: 0;
-    height: calc(100vh - 65px);
+    height: calc(100dvh - 65px);
     overflow: hidden;
     position: relative;
+    max-width: none;
+    margin: 0;
+    width: 100%;
+}
+
+#qr-reader {
+    min-height: 200px;
+}
+
+#qr-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+#qr-reader__dashboard {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#qr-reader__dashboard_section {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+}
+
+#qr-reader__dashboard_section_scanregion {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#qr-reader img {
+    display: none;
+}
+
+/* Hide html5-qrcode built-in camera selector (we use our own button) */
+#qr-reader__dashboard_section_csr {
+    display: none !important;
+}
+
+#qr-reader__dashboard_section_swiper_link {
+    display: none !important;
+}
+
+#qr-reader__status_span {
+    display: none !important;
 }
 
 .scanner-container {
@@ -1096,10 +1161,9 @@ body {
    VIEW: ADMIN & QR LABEL GENERATOR
    ------------------------------------------------------------- */
 .admin-layout {
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
-    gap: 25px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .admin-card {
@@ -1119,16 +1183,19 @@ body {
 
 .printable-tag-container {
     background: #111;
-    padding: 30px;
+    padding: 15px;
     border-radius: 12px;
     display: flex;
     justify-content: center;
     border: 1px dashed var(--border-glass);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Official tag template styling */
 .official-tag {
-    width: 480px;
+    width: 100%;
+    max-width: 480px;
     background-color: #ffffff;
     color: #000000;
     border: 5px double #003865;
@@ -1489,6 +1556,10 @@ body {
         display: flex;
         flex-direction: row;
         height: calc(100vh - 65px);
+        max-width: none;
+        width: 100%;
+        margin: 0;
+        padding: 0;
     }
     
     .scanner-container {
@@ -1523,7 +1594,9 @@ body {
     
     /* Admin QR Tag Generator Grid */
     .admin-layout {
+        display: grid;
         grid-template-columns: 1fr 1.2fr;
+        gap: 25px;
     }
 }
 
@@ -1610,5 +1683,193 @@ body {
         border-radius: 8px !important;
         box-sizing: border-box !important;
         page-break-inside: avoid !important;
+    }
+}
+
+/* Mobile Header navigation optimization */
+@media (max-width: 600px) {
+    .header-logo .logo-text {
+        display: none;
+    }
+    .nav-item span {
+        display: none;
+    }
+    .nav-item {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    .app-header {
+        padding: 6px 12px;
+    }
+
+    .logo-icon {
+        font-size: 1.2rem;
+    }
+}
+
+/* -------------------------------------------------------------
+   MOBILE RESPONSIVE OVERRIDES (< 580px)
+   ------------------------------------------------------------- */
+@media (max-width: 580px) {
+    #scan-view {
+        height: 100dvh;
+    }
+
+    .hud-corner {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    .hud-corner.top-left {
+        top: 16px !important;
+        left: 16px !important;
+    }
+    .hud-corner.top-right {
+        top: 16px !important;
+        right: 16px !important;
+    }
+    .hud-corner.bottom-left {
+        bottom: 16px !important;
+        left: 16px !important;
+    }
+    .hud-corner.bottom-right {
+        bottom: 16px !important;
+        right: 16px !important;
+    }
+
+    .hud-target-ring {
+        width: 130px !important;
+        height: 130px !important;
+    }
+
+    .hud-scanner-line {
+        top: 32% !important;
+        width: 70% !important;
+    }
+
+    .hud-status {
+        bottom: 75px !important;
+        padding: 5px 12px !important;
+    }
+
+    .hud-status-text {
+        font-size: 0.6rem !important;
+    }
+
+    .scanner-controls {
+        bottom: 18px !important;
+        gap: 10px !important;
+    }
+
+    .ctrl-btn {
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 1rem !important;
+    }
+
+    .ctrl-btn.highlight {
+        padding: 0 14px !important;
+        font-size: 0.75rem !important;
+        height: 38px !important;
+    }
+
+    .ctrl-btn-label {
+        font-size: 0.65rem !important;
+    }
+
+    /* Hologram AR panel mobile */
+    #hologram-canvas-container {
+        flex: 0.8;
+        min-height: 180px;
+    }
+
+    .ar-hud-panel {
+        flex: 1.6;
+        padding: 14px !important;
+        gap: 10px !important;
+    }
+
+    .hud-machine-header h2 {
+        font-size: 1.1rem !important;
+    }
+
+    .hud-tab-btn {
+        font-size: 0.75rem !important;
+        padding: 6px 8px !important;
+    }
+
+    .hud-tab-btn i {
+        display: none;
+    }
+
+    .specs-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Admin QR */
+    .official-tag {
+        padding: 12px !important;
+        max-width: 100% !important;
+    }
+
+    .tag-body {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .tag-qr-box {
+        flex-direction: row !important;
+        justify-content: center !important;
+    }
+
+    .tag-info h2 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Explore view */
+    .view-header h2 {
+        font-size: 1.3rem !important;
+    }
+
+    .equipos-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .app-view {
+        padding: 12px !important;
+    }
+
+    /* Splash */
+    .splash-titles .main-title {
+        font-size: 1.6rem !important;
+    }
+
+    .splash-container {
+        gap: 20px !important;
+    }
+
+    /* Modal */
+    .modal-content {
+        padding: 14px !important;
+        max-width: 95% !important;
+    }
+
+    .sim-option {
+        padding: 8px 12px !important;
+    }
+
+    .sim-name {
+        font-size: 0.8rem !important;
+    }
+
+    /* Maintenance tabs */
+    .maintenance-stats {
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+
+    .hologram-glitch-text {
+        font-size: 0.55rem !important;
     }
 }

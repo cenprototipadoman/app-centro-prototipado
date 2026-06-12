@@ -4,7 +4,7 @@
 const EQUIPOS_DB = {
     ender3: {
         id: "ender3",
-        name: "Impresora 3D Ender V3",
+        name: "Impresora 3D Ender-3 V3",
         category: "Fusión de Filamento (FDM)",
         shortDesc: "Impresora FDM de alta velocidad para prototipado rápido de piezas mecánicas y carcasas en PLA, PETG y TPU.",
         materials: "PLA, PETG, TPU, ABS (con cabina)",
@@ -34,15 +34,15 @@ const EQUIPOS_DB = {
     },
     laser: {
         id: "laser",
-        name: "Cortadora Láser CO2",
+        name: "Cortadora Láser CFL-CMA 1390",
         category: "Corte y Grabado",
-        shortDesc: "Cortadora por láser de CO2 para corte de contornos de alta precisión y grabado superficial de materiales orgánicos y plásticos.",
+        shortDesc: "Cortadora por láser de CO2 industrial CFL-CMA 1390 para corte de gran formato de alta precisión y grabado superficial de materiales orgánicos y plásticos.",
         materials: "Acrílico, MDF, Madera contrachapada, Cuero, Cartón (PROHIBIDO: PVC, Vinilo y Policarbonato por gases tóxicos)",
-        area: "900 x 600 mm (Tubo de 90W)",
+        area: "1300 x 900 mm (Tubo de 100W)",
         features: [
-            "Tubo láser de CO2 de 90W de potencia con refrigeración líquida activa.",
+            "Tubo láser de CO2 de 100W de potencia con refrigeración líquida activa (Chiller CW-5200).",
             "Cabezal de enfoque de alta resolución con puntero rojo de posicionamiento.",
-            "Extractor de humo industrial integrado y asistencia de aire comprimido.",
+            "Área de trabajo expandida de 1300 x 900 mm con mesa de elevación motorizada.",
             "Controlador digital Ruida compatible con software RDWorks y LightBurn."
         ],
         steps: [
@@ -124,16 +124,16 @@ const EQUIPOS_DB = {
     },
     "robotic-arm": {
         id: "robotic-arm",
-        name: "Brazo Robótico Industrial",
+        name: "Brazo Robótico szgh-P1500-B-6",
         category: "Automatización",
-        shortDesc: "Brazo robótico articulado industrial de 6 ejes para entrenamiento en programación, Pick-and-Place, y simulación de manufactura.",
-        materials: "Piezas de manipulación livianas (plástico, madera, metal ligero hasta 3 kg)",
-        area: "Alcance radial de hasta 700 mm (Carga útil 3 kg)",
+        shortDesc: "Brazo robótico articulado industrial szgh-P1500-B-6 de 6 ejes para entrenamiento en programación, Pick-and-Place, y simulación de manufactura a gran escala.",
+        materials: "Piezas de manipulación y herramientas con carga útil de hasta 6 kg",
+        area: "Alcance radial de hasta 1500 mm (Carga útil 6 kg)",
         features: [
-            "Brazo articulado de 6 grados de libertad (ejes de rotación continuos).",
-            "Controlador industrial con parada de emergencia redundante de doble canal.",
-            "Teach Pendant (consola de programación táctil) con joystick para control manual.",
-            "Brida final con conexión neumática y eléctrica para pinzas intercambiables."
+            "Brazo articulado de 6 grados de libertad con alcance radial de 1500 mm y carga útil de 6 kg.",
+            "Controlador industrial SZGH con parada de emergencia redundante de doble canal.",
+            "Teach Pendant SZGH de última generación para programación de trayectorias complejas.",
+            "Servomotores de alta precisión con encoders absolutos en cada articulación."
         ],
         steps: [
             "<strong>Inspección Visual:</strong> Verifica que no haya personas ni obstáculos dentro del radio de alcance del brazo. Comprueba las mangueras neumáticas.",
@@ -209,14 +209,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Asignar listeners del Splash
     document.getElementById("btn-start").addEventListener("click", startSystem);
-    
+
     // Configurar botones de navegación
     const navButtons = document.querySelectorAll(".nav-item");
     navButtons.forEach(btn => {
         btn.addEventListener("click", (e) => {
             const target = btn.getAttribute("data-target");
             switchView(target);
-            
+
             // Actualizar clase activa en botones
             navButtons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Configurar botones del modal de simulación
     document.getElementById("btn-open-simulate").addEventListener("click", openSimulationModal);
     document.querySelector(".close-modal").addEventListener("click", closeSimulationModal);
-    
+
     const simOptions = document.querySelectorAll(".sim-option");
     simOptions.forEach(opt => {
         opt.addEventListener("click", () => {
@@ -245,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tab.addEventListener("click", () => {
             hudTabs.forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
-            
+
             const targetPane = tab.getAttribute("data-tab");
             const panes = document.querySelectorAll(".tab-pane");
             panes.forEach(pane => pane.classList.remove("active"));
@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function startSystem() {
     const splash = document.getElementById("splash-screen");
     const appContainer = document.getElementById("app-container");
-    
+
     splash.classList.remove("active");
     setTimeout(() => {
         splash.classList.add("hidden");
@@ -300,7 +300,7 @@ function switchView(viewId) {
     currentViewEl.classList.remove("active");
     setTimeout(() => {
         currentViewEl.classList.add("hidden");
-        
+
         // Activar nueva vista
         const newViewEl = document.getElementById(viewId);
         newViewEl.classList.remove("hidden");
@@ -328,14 +328,14 @@ function checkUrlHash() {
             // Asegurarnos de entrar al contenedor de la app
             document.getElementById("splash-screen").classList.add("hidden");
             document.getElementById("app-container").classList.remove("hidden");
-            
+
             // Forzar vista de escáner activa
             switchView("scan-view");
             const navBtnScan = document.getElementById("nav-btn-scan");
             const navButtons = document.querySelectorAll(".nav-item");
             navButtons.forEach(b => b.classList.remove("active"));
             navBtnScan.classList.add("active");
-            
+
             // Retrasar levemente para esperar que la vista se dibuje
             setTimeout(() => {
                 triggerAROverlay(machineId);
@@ -352,10 +352,12 @@ function startScanner() {
         return; // Ya está corriendo
     }
 
-    // Simplificamos qrConfig para máxima compatibilidad (eliminamos aspectRatio estricto)
+    // qrbox responsive: más pequeño en móviles
+    const isMobile = window.innerWidth < 580;
+    const qrSize = isMobile ? Math.min(window.innerWidth * 0.5, 180) : 220;
     const qrConfig = {
-        fps: 15,
-        qrbox: { width: 220, height: 220 }
+        fps: 10,
+        qrbox: { width: qrSize, height: qrSize }
     };
 
     try {
@@ -383,9 +385,9 @@ function startScanner() {
 
                 html5QrScanner = new Html5Qrcode("qr-reader");
                 html5QrScanner.start(
-                    selectedCamera, 
-                    qrConfig, 
-                    onQrScanSuccess, 
+                    selectedCamera,
+                    qrConfig,
+                    onQrScanSuccess,
                     onQrScanFailure
                 ).then(() => {
                     // Verificar si la linterna está disponible
@@ -415,13 +417,15 @@ function startScanner() {
 
 function stopScanner() {
     if (html5QrScanner) {
-        html5QrScanner.stop().then(() => {
-            html5QrScanner = null;
-            document.getElementById("btn-toggle-flashlight").classList.add("hidden");
-            isFlashlightOn = false;
-        }).catch(err => {
-            console.error("Error deteniendo el escaner: ", err);
-            html5QrScanner = null;
+        const scannerRef = html5QrScanner;
+        // Poner a null INMEDIATAMENTE (antes del promise) para evitar race conditions
+        // Si startScanner() se llama mientras el stop() sigue en progreso, el check
+        // 'if (html5QrScanner)' ya verá null y no creará una segunda instancia
+        html5QrScanner = null;
+        isFlashlightOn = false;
+        document.getElementById("btn-toggle-flashlight").classList.add("hidden");
+        scannerRef.stop().catch(err => {
+            console.warn("Error deteniendo el escaner (no crítico): ", err);
         });
     }
 }
@@ -432,21 +436,21 @@ function toggleCamera() {
     let currentIndex = activeCameras.findIndex(c => c.id === currentCameraId);
     let nextIndex = (currentIndex + 1) % activeCameras.length;
     let nextCameraId = activeCameras[nextIndex].id;
-    
+
     html5QrScanner.stop().then(() => {
         currentCameraId = nextCameraId;
         isFlashlightOn = false;
         document.getElementById("btn-toggle-flashlight").classList.add("hidden");
-        
+
         const qrConfig = {
             fps: 15,
             qrbox: { width: 220, height: 220 }
         };
 
         html5QrScanner.start(
-            currentCameraId, 
-            qrConfig, 
-            onQrScanSuccess, 
+            currentCameraId,
+            qrConfig,
+            onQrScanSuccess,
             onQrScanFailure
         ).then(() => {
             if (html5QrScanner.getRunningTrackCapabilities().torch) {
@@ -458,7 +462,7 @@ function toggleCamera() {
 
 function toggleFlashlight() {
     if (!html5QrScanner) return;
-    
+
     isFlashlightOn = !isFlashlightOn;
     html5QrScanner.applyVideoConstraints({
         advanced: [{ torch: isFlashlightOn }]
@@ -475,10 +479,16 @@ function toggleFlashlight() {
     });
 }
 
+// Bandera para evitar detección doble mientras se procesa el QR
+let isProcessingQR = false;
+
 function onQrScanSuccess(decodedText, decodedResult) {
+    // Evitar disparos múltiples mientras se procesa el QR anterior
+    if (isProcessingQR) return;
+
     // Buscar si el texto escaneado coincide con alguna URL con hash de máquina, o directamente el ID
     let machineId = null;
-    
+
     if (EQUIPOS_DB[decodedText]) {
         machineId = decodedText;
     } else if (decodedText.includes("machine=")) {
@@ -494,18 +504,21 @@ function onQrScanSuccess(decodedText, decodedResult) {
     }
 
     if (machineId && EQUIPOS_DB[machineId]) {
+        isProcessingQR = true;
+
         // Disparar flash de éxito en pantalla
         const flashEl = document.getElementById("scanner-glow");
         flashEl.classList.remove("hidden");
-        setTimeout(() => {
-            flashEl.classList.add("hidden");
-        }, 400);
+        setTimeout(() => flashEl.classList.add("hidden"), 400);
 
-        // Detener la cámara momentáneamente mientras visualiza
+        // Detener la cámara y luego abrir el overlay
         stopScanner();
-        
-        // Cargar AR Overlay
-        triggerAROverlay(machineId);
+
+        // Pequeño delay para asegurarse de que el scanner paró antes de montar el overlay
+        setTimeout(() => {
+            triggerAROverlay(machineId);
+            isProcessingQR = false;
+        }, 300);
     }
 }
 
@@ -515,9 +528,9 @@ function onQrScanFailure(error) {
 
 function fallbackNoCamera(error) {
     console.warn("La cámara no está disponible o el navegador bloqueó el permiso. Usando interfaz de simulación.", error);
-    
+
     let errMsg = "SIN CÁMARA (USA BOTÓN SIMULAR)";
-    
+
     // Detectar si no es un contexto seguro
     if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         errMsg = "ERROR: REQUIERE HTTPS PARA LA CÁMARA";
@@ -525,7 +538,7 @@ function fallbackNoCamera(error) {
     } else {
         alert("⚠️ Acceso a Cámara No Disponible:\nNo se pudo acceder a la cámara. Esto puede deberse a:\n1. El permiso de cámara fue denegado o está bloqueado por el navegador.\n2. No hay cámaras físicas en este dispositivo.\n3. Otra aplicación está utilizando la cámara.\n\nPuedes usar el botón 'Simular QR' para probar todas las funciones de Realidad Aumentada.");
     }
-    
+
     const statusText = document.querySelector(".hud-status-text");
     if (statusText) {
         statusText.innerText = errMsg;
@@ -554,11 +567,11 @@ function triggerAROverlay(machineId) {
     document.getElementById("machine-hud-name").innerText = machine.name;
     document.getElementById("machine-badge-category").innerText = machine.category;
     document.getElementById("machine-hud-desc").innerText = machine.shortDesc;
-    
+
     // Specs Tab
     document.getElementById("spec-materials").innerText = machine.materials;
     document.getElementById("spec-area").innerText = machine.area;
-    
+
     const featuresList = document.getElementById("machine-features-list");
     featuresList.innerHTML = "";
     machine.features.forEach(feat => {
@@ -575,7 +588,7 @@ function triggerAROverlay(machineId) {
         li.innerHTML = step;
         stepsList.appendChild(li);
     });
-    
+
     const warningBanner = document.querySelector("#tab-usage .alert-banner.warning span");
     warningBanner.innerHTML = `<strong>Seguridad:</strong> ${machine.safety}`;
 
@@ -585,21 +598,21 @@ function triggerAROverlay(machineId) {
 
     const maintList = document.getElementById("machine-maintenance-checklist");
     maintList.innerHTML = "";
-    
+
     // Cargar estado de checklist guardado localmente
     const savedChecks = JSON.parse(localStorage.getItem(`maint_check_${machineId}`) || "[]");
 
     machine.maintTasks.forEach((task, index) => {
         const label = document.createElement("label");
         label.className = "maint-check-item";
-        
+
         const isChecked = savedChecks.includes(index);
-        
+
         label.innerHTML = `
             <input type="checkbox" data-index="${index}" ${isChecked ? 'checked' : ''}>
             <span class="maint-check-desc">${task}</span>
         `;
-        
+
         // Listener para guardar en LocalStorage
         label.querySelector("input").addEventListener("change", (e) => {
             const currentChecks = JSON.parse(localStorage.getItem(`maint_check_${machineId}`) || "[]");
@@ -624,7 +637,7 @@ function triggerAROverlay(machineId) {
     const hudTabs = document.querySelectorAll(".hud-tab-btn");
     hudTabs.forEach(t => t.classList.remove("active"));
     document.querySelector('[data-tab="tab-specs"]').classList.add("active");
-    
+
     const panes = document.querySelectorAll(".tab-pane");
     panes.forEach(pane => pane.classList.remove("active"));
     document.getElementById("tab-specs").classList.add("active");
@@ -638,12 +651,12 @@ function triggerAROverlay(machineId) {
 
 function closeAROverlay() {
     document.getElementById("ar-overlay-view").classList.add("hidden");
-    
+
     // Detener la animación 3D de Three.js
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
     }
-    
+
     // Limpiar escena de Three.js
     if (renderer) {
         renderer.dispose();
@@ -657,12 +670,17 @@ function closeAROverlay() {
     }
 
     // Reiniciar el escaner de cámara si estamos en la vista de escaneo
-    if (currentView === "scan-view" && !html5QrScanner) {
-        startScanner();
+    // Pequeño delay para que el DOM libere el elemento #qr-reader antes de reinicializar
+    if (currentView === "scan-view") {
+        setTimeout(() => {
+            if (!html5QrScanner) {
+                startScanner();
+            }
+        }, 400);
     }
-    
+
     selectedMachineId = null;
-    
+
     // Remover hash de la url de forma limpia
     history.replaceState(null, null, ' ');
 }
@@ -670,9 +688,18 @@ function closeAROverlay() {
 /* -------------------------------------------------------------
    SISTEMA DE HOLOGRAMAS 3D INTERACTIVOS (THREE.JS)
    ------------------------------------------------------------- */
+// Mapeo de archivos GLB para cada equipo
+const MODEL_FILES = {
+    ender3: "Modelos 3d/Ender-3 V3.glb",
+    laser: "Modelos 3d/CFL-CMA 1390.glb",
+    resin: "Modelos 3d/Anycubic Photon.glb",
+    "robotic-arm": "Modelos 3d/szgh-P1500-B-6.glb",
+    cnc: "Modelos 3d/CNC3018.glb"
+};
+
 function initHologram3D(machineId) {
     canvasContainer = document.getElementById("hologram-canvas-container");
-    
+
     // Limpieza previa por seguridad
     const oldCanvas = canvasContainer.querySelector("canvas");
     if (oldCanvas) canvasContainer.removeChild(oldCanvas);
@@ -697,13 +724,17 @@ function initHologram3D(machineId) {
     canvasContainer.appendChild(renderer.domElement);
 
     // Luces
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(3, 10, 5);
+    scene.add(dirLight);
 
     const pointLight = new THREE.PointLight(0x00f0ff, 1.5, 20);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
-    
+
     const pointLightGreen = new THREE.PointLight(0x94b43b, 1, 20);
     pointLightGreen.position.set(-5, 3, -5);
     scene.add(pointLightGreen);
@@ -713,13 +744,103 @@ function initHologram3D(machineId) {
     gridHelper.position.y = -0.5;
     scene.add(gridHelper);
 
-    // Crear geometría de máquina procedural holográfica
-    createProceduralHologram(machineId);
+    // Obtener referencias de UI para estado de carga
+    const glitchText = canvasContainer.querySelector(".hologram-glitch-text");
+    const subText = canvasContainer.querySelector(".hologram-sub-text");
+
+    // Verificar si el equipo tiene un modelo 3D asignado
+    if (MODEL_FILES[machineId]) {
+        if (glitchText) glitchText.innerText = "CARGANDO MODELO 3D...";
+        if (subText) subText.innerText = "Espere un momento, procesando geometría...";
+
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            MODEL_FILES[machineId],
+            (gltf) => {
+                // Restaurar textos de UI
+                if (glitchText) glitchText.innerText = "CONEXIÓN HOLOGRÁFICA ESTABLE";
+                if (subText) subText.innerText = "Gira la representación táctilmente";
+
+                const group = new THREE.Group();
+
+                // Aplicar estilo holográfico premium
+                gltf.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: 0x00a8ff,
+                            emissive: 0x001122,
+                            roughness: 0.4,
+                            metalness: 0.8,
+                            transparent: true,
+                            opacity: 0.6,
+                            side: THREE.DoubleSide
+                        });
+
+                        // Agregar malla de alambre brillante (wireframe) superpuesta
+                        const wireframe = new THREE.WireframeGeometry(child.geometry);
+                        const line = new THREE.LineSegments(wireframe);
+                        line.material.color.setHex(0x00f0ff);
+                        line.material.transparent = true;
+                        line.material.opacity = 0.25;
+                        child.add(line);
+                    }
+                });
+
+                // Aplicar rotaciones correctivas específicas según la máquina
+                // IMPORTANTE: aplicar ANTES de calcular la bounding box para que el centrado sea correcto
+                if (machineId === "resin") {
+                    // Anycubic Photon: el modelo STEP tiene la tapa hacia abajo, girar 180° en X
+                    gltf.scene.rotation.x = Math.PI;
+                } else if (machineId === "robotic-arm") {
+                    // Brazo szgh (STL): rotar 180° en X y Z para corregir orientación
+                    gltf.scene.rotation.x = Math.PI;
+                    gltf.scene.rotation.z = Math.PI;
+                } else if (machineId === "ender3") {
+                    // Ender-3 V3: STEP exportado con Z-up → rotar -90° en X para pasar a Y-up
+                    gltf.scene.rotation.x = -Math.PI / 2;
+                }
+
+                // Forzar actualización de matrices antes de calcular la bounding box con rotación
+                gltf.scene.updateMatrixWorld(true);
+
+                // Centrar y escalar automáticamente usando la caja delimitadora (post-rotación)
+                const box = new THREE.Box3().setFromObject(gltf.scene);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const targetSize = 2.5;
+                const scale = targetSize / (maxDim || 1);
+
+                gltf.scene.scale.set(scale, scale, scale);
+
+                // Alinear el suelo a y = -0.5 (sobre la rejilla) y centrar en X/Z
+                const yOffset = -0.5 - (box.min.y * scale);
+                gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
+
+                group.add(gltf.scene);
+                currentMesh = group;
+                scene.add(currentMesh);
+            },
+            undefined,
+            (error) => {
+                console.error("Error cargando modelo GLB:", error, "Usando fallback procedimental.");
+                if (glitchText) glitchText.innerText = "FALLBACK HOLOGRÁFICO ACTIVO";
+                if (subText) subText.innerText = "Gira la representación táctilmente";
+                createProceduralHologram(machineId);
+            }
+        );
+    } else {
+        // Fallback directo a geometría procedimental
+        createProceduralHologram(machineId);
+    }
 
     // Interacción táctil para rotar el modelo
     let isDragging = false;
     let previousMousePosition = { x: 0, y: 0 };
-    
+
     const startDrag = (x, y) => {
         isDragging = true;
         previousMousePosition = { x, y };
@@ -727,7 +848,7 @@ function initHologram3D(machineId) {
 
     const drag = (x, y) => {
         if (!isDragging || !currentMesh) return;
-        
+
         const deltaMove = {
             x: x - previousMousePosition.x,
             y: y - previousMousePosition.y
@@ -763,7 +884,7 @@ function initHologram3D(machineId) {
 
     // Ciclo de animación
     let clock = new THREE.Clock();
-    
+
     function animate() {
         animationFrameId = requestAnimationFrame(animate);
 
@@ -774,7 +895,7 @@ function initHologram3D(machineId) {
             if (!isDragging) {
                 currentMesh.rotation.y += 0.006;
             }
-            
+
             // Animación especial por máquina
             animateProceduralHologram(machineId, elapsedTime);
         }
@@ -784,7 +905,7 @@ function initHologram3D(machineId) {
 
         renderer.render(scene, camera);
     }
-    
+
     animate();
 
     // Redimensionado del canvas
@@ -805,7 +926,7 @@ function onWindowResize() {
    ------------------------------------------------------------- */
 function createProceduralHologram(machineId) {
     const group = new THREE.Group();
-    
+
     // Material holográfico común (Wireframe azul cian brillante)
     const holoMaterial = new THREE.MeshBasicMaterial({
         color: 0x00f0ff,
@@ -813,14 +934,14 @@ function createProceduralHologram(machineId) {
         transparent: true,
         opacity: 0.8
     });
-    
+
     const solidMaterial = new THREE.MeshBasicMaterial({
         color: 0x003865,
         transparent: true,
         opacity: 0.15
     });
 
-    switch(machineId) {
+    switch (machineId) {
         case "ender3": // IMPRESORA 3D
             // Base cama
             const baseGeo = new THREE.BoxGeometry(2.5, 0.2, 2.5);
@@ -836,7 +957,7 @@ function createProceduralHologram(machineId) {
             // Carro X y Extrusor
             const headGroup = new THREE.Group();
             headGroup.name = "extruderGroup";
-            
+
             // Eje horizontal
             const railGeo = new THREE.BoxGeometry(2.4, 0.1, 0.15);
             const rail = new THREE.Mesh(railGeo, holoMaterial);
@@ -858,7 +979,7 @@ function createProceduralHologram(machineId) {
             bed.name = "printBed";
             bed.position.set(0, 0.15, 0);
             group.add(bed);
-            
+
             // Pieza siendo impresa virtualmente
             const printPartGeo = new THREE.OctahedronGeometry(0.5, 1);
             const printPart = new THREE.Mesh(printPartGeo, holoMaterial);
@@ -933,7 +1054,7 @@ function createProceduralHologram(machineId) {
             const paper = new THREE.Mesh(paperGeo, holoMaterial);
             paper.position.set(0, 0.7, 0.2);
             group.add(paper);
-            
+
             // Carro de impresión
             const carriageGeo = new THREE.BoxGeometry(0.3, 0.4, 0.4);
             const carriage = new THREE.Mesh(carriageGeo, holoMaterial);
@@ -1046,14 +1167,14 @@ function createProceduralHologram(machineId) {
             tool.name = "robotTool";
             tool.position.y = 0.25;
             wrist.add(tool);
-            
+
             // Dedos pinza
             const fingerLGeo = new THREE.BoxGeometry(0.06, 0.2, 0.08);
             fingerLGeo.translate(-0.08, 0.1, 0);
             const fingerL = new THREE.Mesh(fingerLGeo, holoMaterial);
             fingerL.name = "robotFingerL";
             tool.add(fingerL);
-            
+
             const fingerR = fingerL.clone();
             fingerR.name = "robotFingerR";
             fingerR.geometry = fingerLGeo.clone().translate(0.16, 0, 0);
@@ -1072,7 +1193,7 @@ function createProceduralHologram(machineId) {
             const railsY1 = new THREE.Mesh(railsY1Geo, holoMaterial);
             railsY1.position.set(-0.8, 0.1, 0);
             group.add(railsY1);
-            
+
             const railsY2 = railsY1.clone();
             railsY2.position.x = 0.8;
             group.add(railsY2);
@@ -1133,7 +1254,7 @@ function createProceduralHologram(machineId) {
 function animateProceduralHologram(machineId, elapsedTime) {
     if (!currentMesh) return;
 
-    switch(machineId) {
+    switch (machineId) {
         case "ender3": // IMPRESORA 3D
             const extruder = currentMesh.getObjectByName("extruderGroup");
             const printBed = currentMesh.getObjectByName("printBed");
@@ -1143,14 +1264,14 @@ function animateProceduralHologram(machineId, elapsedTime) {
             if (extruder && printBed && extruderHead && printPart) {
                 // Movimiento oscilatorio del extrusor en X
                 extruderHead.position.x = Math.sin(elapsedTime * 3) * 0.8;
-                
+
                 // Movimiento de cama en Y (profundidad en Z del 3D)
                 printBed.position.z = Math.cos(elapsedTime * 2) * 0.5;
-                
+
                 // Movimiento de subida en Z (eje Y del 3D)
                 const heightY = 1.0 + Math.sin(elapsedTime * 0.2) * 0.8;
                 extruder.position.y = heightY;
-                
+
                 // Escala de la pieza conforme "crece"
                 const scaleVal = 0.5 + (heightY - 1.0) * 0.5;
                 printPart.scale.set(scaleVal, scaleVal, scaleVal);
@@ -1166,7 +1287,7 @@ function animateProceduralHologram(machineId, elapsedTime) {
             if (gantryL && headL && laserBeam) {
                 // Movimiento pórtico Y (eje Z de Three.js)
                 gantryL.position.z = Math.sin(elapsedTime * 1.5) * 0.8;
-                
+
                 // Movimiento cabezal X (eje X de Three.js)
                 headL.position.x = Math.cos(elapsedTime * 2.5) * 1.2;
 
@@ -1206,7 +1327,7 @@ function animateProceduralHologram(machineId, elapsedTime) {
                 elbow.rotation.z = Math.cos(elapsedTime * 1.2) * 0.4;
                 wrist.rotation.x = Math.sin(elapsedTime * 1.5) * 0.5;
                 tool.rotation.y = elapsedTime * 0.8;
-                
+
                 // Pinza abriendo y cerrando
                 const grip = 0.04 + Math.sin(elapsedTime * 4) * 0.03;
                 if (fingerL && fingerR) {
@@ -1224,11 +1345,11 @@ function animateProceduralHologram(machineId, elapsedTime) {
             if (cncSpindle && cncBit && cncBed) {
                 // Giro rápido de fresa
                 cncBit.rotation.y += 0.8;
-                
+
                 // Desplazamiento X e Y
                 cncSpindle.position.x = Math.sin(elapsedTime * 2) * 0.6;
                 cncBed.position.z = Math.cos(elapsedTime * 1.5) * 0.5;
-                
+
                 // Pequeño cabeceo en Z (eje Y del 3D)
                 cncSpindle.position.y = 1.2 + Math.sin(elapsedTime * 3) * 0.15;
             }
@@ -1245,10 +1366,10 @@ function renderExploreView() {
 
     for (let key in EQUIPOS_DB) {
         const item = EQUIPOS_DB[key];
-        
+
         const card = document.createElement("div");
         card.className = "machine-card glassmorphism";
-        
+
         // Asignar ícono según categoría
         let iconClass = "fa-solid fa-cube";
         if (key === "laser") iconClass = "fa-solid fa-bolt";
@@ -1279,7 +1400,7 @@ function renderExploreView() {
             // Cambiar botones activos de barra de navegación
             document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
             document.getElementById("nav-btn-scan").classList.add("active");
-            
+
             setTimeout(() => {
                 triggerAROverlay(item.id);
             }, 200);
@@ -1297,7 +1418,7 @@ let qrCodeGenerator = null;
 function setupAdminQRSection() {
     const select = document.getElementById("qr-select-machine");
     select.innerHTML = "";
-    
+
     // Cargar selectores
     for (let key in EQUIPOS_DB) {
         const option = document.createElement("option");
@@ -1309,7 +1430,7 @@ function setupAdminQRSection() {
     // Listener para cambiar vista previa de la etiqueta
     select.addEventListener("change", updatePrintTagPreview);
     document.getElementById("qr-app-url").addEventListener("input", updatePrintTagPreview);
-    
+
     // Botón Imprimir
     document.getElementById("btn-print-tag").addEventListener("click", () => {
         window.print();
@@ -1323,21 +1444,21 @@ function updatePrintTagPreview() {
     const select = document.getElementById("qr-select-machine");
     const machineId = select.value;
     const appUrlInput = document.getElementById("qr-app-url").value.trim();
-    
+
     const machine = EQUIPOS_DB[machineId];
     if (!machine) return;
 
     // Actualizar textos de la etiqueta oficial
     document.getElementById("tag-preview-title").innerText = machine.name;
     document.getElementById("tag-preview-category").innerText = machine.category.toUpperCase();
-    
+
     const specsContainer = document.querySelector(".tag-specs");
     let descriptionText = "";
     if (machineId === "ender3") descriptionText = "Prototipado rápido de piezas mecánicas y carcasas plásticas.";
-    if (machineId === "laser") descriptionText = "Corte de contornos de alta precisión y grabado de madera/acrílico.";
+    if (machineId === "laser") descriptionText = "Corte de contornos de alta precisión y grabado de madera/acrílico con la CFL-CMA 1390.";
     if (machineId === "plotter") descriptionText = "Impresión de planos de gran formato, cartelería y corte de vinilos.";
     if (machineId === "resin") descriptionText = "Modelos tridimensionales con alto nivel de detalle fotocurable.";
-    if (machineId === "robotic-arm") descriptionText = "Simulación e integración de procesos de automatización industrial.";
+    if (machineId === "robotic-arm") descriptionText = "Simulación e integración con el brazo robótico szgh-P1500-B-6.";
     if (machineId === "cnc") descriptionText = "Fresado de placas de circuito impreso (PCB) y grabado 2D/3D.";
 
     specsContainer.innerHTML = `
@@ -1376,11 +1497,11 @@ function updatePrintTagPreview() {
    ------------------------------------------------------------- */
 function submitFaultReport(e) {
     e.preventDefault();
-    
+
     const user = document.getElementById("report-user").value;
     const severity = document.getElementById("report-severity").value;
     const desc = document.getElementById("report-desc").value;
-    
+
     console.log(`REPORTE DE FALLA REGISTRADO:
     Equipo: ${selectedMachineId}
     Usuario: ${user}
@@ -1391,10 +1512,10 @@ function submitFaultReport(e) {
 
     // Mostrar mensaje de éxito y ocultar formulario
     document.getElementById("fault-report-form").classList.add("hidden");
-    
+
     const successMsg = document.getElementById("report-success-msg");
     successMsg.classList.remove("hidden");
-    
+
     // Guardar en la base de datos local un log simulado
     const incidentLog = JSON.parse(localStorage.getItem("incident_logs") || "[]");
     incidentLog.push({
