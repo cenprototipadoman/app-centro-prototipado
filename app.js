@@ -207,6 +207,7 @@ let xrReferenceSpace = null;
 let arMode = 'none'; // 'camera' | 'webxr' | 'none'
 let arModelPlaced = false;
 let reticleMesh = null;
+let arGestureMode = 'move'; // 'move' | 'rotate'
 
 /* -------------------------------------------------------------
    INICIALIZACIÓN DEL SISTEMA
@@ -265,6 +266,43 @@ document.addEventListener("DOMContentLoaded", () => {
     // Configurar botón para alternar cámara
     document.getElementById("btn-toggle-camera").addEventListener("click", toggleCamera);
     document.getElementById("btn-toggle-flashlight").addEventListener("click", toggleFlashlight);
+
+    // Configurar botones de control AR manual (Mover, Rotar, Profundidad, Escala)
+    const btnGestureMode = document.getElementById("btn-gesture-mode");
+    const labelGestureMode = document.getElementById("gesture-mode-label");
+    if (btnGestureMode) {
+        btnGestureMode.addEventListener("click", () => {
+            if (arGestureMode === 'move') {
+                arGestureMode = 'rotate';
+                if (labelGestureMode) labelGestureMode.innerText = "ROTAR";
+                btnGestureMode.querySelector("i").className = "fa-solid fa-arrows-spin";
+            } else {
+                arGestureMode = 'move';
+                if (labelGestureMode) labelGestureMode.innerText = "MOVER";
+                btnGestureMode.querySelector("i").className = "fa-solid fa-arrows-up-down-left-right";
+            }
+        });
+    }
+
+    const sliderDepth = document.getElementById("slider-ar-depth");
+    if (sliderDepth) {
+        sliderDepth.addEventListener("input", (e) => {
+            const depth = parseFloat(e.target.value);
+            if (currentMesh && arMode !== 'none') {
+                currentMesh.position.z = -depth;
+            }
+        });
+    }
+
+    const sliderScale = document.getElementById("slider-ar-scale");
+    if (sliderScale) {
+        sliderScale.addEventListener("input", (e) => {
+            const scaleVal = parseFloat(e.target.value);
+            if (currentMesh) {
+                currentMesh.scale.set(scaleVal, scaleVal, scaleVal);
+            }
+        });
+    }
 
     // Inicializar catálogo de equipos
     renderExploreView();
@@ -733,11 +771,26 @@ async function startARCamera(machineId) {
     const arModeBadge = document.getElementById("ar-mode-badge");
     const arModeText = document.getElementById("ar-mode-text");
     const btnArPlace = document.getElementById("btn-ar-place");
+    const controlsOverlay = document.getElementById("ar-controls-overlay");
 
     // Reset UI por defecto
     if (videoBg) videoBg.classList.add("hidden");
     if (btnArPlace) btnArPlace.classList.add("hidden");
     if (arModeBadge) arModeBadge.classList.add("hidden");
+    if (controlsOverlay) controlsOverlay.classList.add("hidden");
+
+    // Resetear los deslizadores y el modo de gesto
+    arGestureMode = 'move';
+    const btnGestureMode = document.getElementById("btn-gesture-mode");
+    const labelGestureMode = document.getElementById("gesture-mode-label");
+    if (btnGestureMode) {
+        btnGestureMode.querySelector("i").className = "fa-solid fa-arrows-up-down-left-right";
+        if (labelGestureMode) labelGestureMode.innerText = "MOVER";
+    }
+    const sliderDepth = document.getElementById("slider-ar-depth");
+    if (sliderDepth) sliderDepth.value = "1.8";
+    const sliderScale = document.getElementById("slider-ar-scale");
+    if (sliderScale) sliderScale.value = "1.0";
 
     // Intentar WebXR (ARCore en Android) primero
     let webxrSupported = false;
@@ -756,6 +809,7 @@ async function startARCamera(machineId) {
             arModeBadge.classList.remove("hidden");
             if (arModeText) arModeText.innerText = "MODO AR (WEBXR SURFACE)";
         }
+        if (controlsOverlay) controlsOverlay.classList.remove("hidden");
         try {
             await startWebXRSession(machineId);
             return;
@@ -771,6 +825,7 @@ async function startARCamera(machineId) {
         arModeBadge.classList.remove("hidden");
         if (arModeText) arModeText.innerText = "MODO AR (VISTA DE CÁMARA)";
     }
+    if (controlsOverlay) controlsOverlay.classList.remove("hidden");
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
@@ -795,6 +850,7 @@ async function startARCamera(machineId) {
             // Fallback Nivel 2: Visor holográfico clásico (fondo oscuro)
             arMode = 'none';
             if (arOverlay) arOverlay.classList.remove("ar-active");
+            if (controlsOverlay) controlsOverlay.classList.add("hidden");
             if (arModeBadge) {
                 arModeBadge.classList.remove("hidden");
                 if (arModeText) arModeText.innerText = "MODO VISOR 3D (SIN CÁMARA)";
@@ -803,6 +859,7 @@ async function startARCamera(machineId) {
     } else {
         arMode = 'none';
         if (arOverlay) arOverlay.classList.remove("ar-active");
+        if (controlsOverlay) controlsOverlay.classList.add("hidden");
         if (arModeBadge) {
             arModeBadge.classList.remove("hidden");
             if (arModeText) arModeText.innerText = "MODO VISOR 3D (SIN CÁMARA)";
@@ -878,6 +935,11 @@ function stopARCamera() {
     const arModeBadge = document.getElementById("ar-mode-badge");
     if (arModeBadge) {
         arModeBadge.classList.add("hidden");
+    }
+
+    const controlsOverlay = document.getElementById("ar-controls-overlay");
+    if (controlsOverlay) {
+        controlsOverlay.classList.add("hidden");
     }
 
     arMode = 'none';
@@ -1112,8 +1174,15 @@ function initHologram3D(machineId) {
             y: y - previousMousePosition.y
         };
 
-        currentMesh.rotation.y += deltaMove.x * 0.007;
-        currentMesh.rotation.x += deltaMove.y * 0.007;
+        if (arMode !== 'none' && arGestureMode === 'move') {
+            // Mover el modelo en los ejes X/Y de la pantalla
+            currentMesh.position.x += deltaMove.x * 0.005;
+            currentMesh.position.y -= deltaMove.y * 0.005;
+        } else {
+            // Rotar el modelo
+            currentMesh.rotation.y += deltaMove.x * 0.007;
+            currentMesh.rotation.x += deltaMove.y * 0.007;
+        }
 
         previousMousePosition = { x, y };
     };
