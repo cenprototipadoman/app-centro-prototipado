@@ -249,6 +249,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Cerrar panel AR overlay
     document.querySelector(".close-ar-panel").addEventListener("click", closeAROverlay);
 
+    // Alternar visibilidad de panel AR (Minimizar / Mostrar)
+    const btnToggleHud = document.getElementById("btn-toggle-hud");
+    const hudPanelEl = document.querySelector(".ar-hud-panel");
+    const toggleHudText = document.getElementById("toggle-hud-text");
+    if (btnToggleHud && hudPanelEl) {
+        btnToggleHud.addEventListener("click", () => {
+            const isCollapsed = hudPanelEl.classList.toggle("hud-collapsed");
+            if (toggleHudText) {
+                toggleHudText.innerText = isCollapsed ? "MOSTRAR INFO" : "OCULTAR INFO";
+            }
+            const icon = btnToggleHud.querySelector("i");
+            if (icon) {
+                icon.className = isCollapsed ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down";
+            }
+        });
+    }
+
     // Configurar tabs dentro del panel AR
     const hudTabs = document.querySelectorAll(".hud-tab-btn");
     hudTabs.forEach(tab => {
@@ -498,10 +515,11 @@ function stopScanner() {
         html5QrScanner = null;
         isFlashlightOn = false;
         document.getElementById("btn-toggle-flashlight").classList.add("hidden");
-        scannerRef.stop().catch(err => {
+        return scannerRef.stop().catch(err => {
             console.warn("Error deteniendo el escaner (no crítico): ", err);
         });
     }
+    return Promise.resolve();
 }
 
 function toggleCamera() {
@@ -588,12 +606,12 @@ function onQrScanSuccess(decodedText, decodedResult) {
         setTimeout(() => flashEl.classList.add("hidden"), 400);
 
         // Detener la cámara y luego abrir el overlay
-        stopScanner();
-
-        setTimeout(() => {
-            triggerAROverlay(machineId);
-            isProcessingQR = false;
-        }, 300);
+        stopScanner().then(() => {
+            setTimeout(() => {
+                triggerAROverlay(machineId);
+                isProcessingQR = false;
+            }, 150); // Small cooldown buffer
+        });
     }
 }
 
@@ -716,6 +734,19 @@ function triggerAROverlay(machineId) {
     const panes = document.querySelectorAll(".tab-pane");
     panes.forEach(pane => pane.classList.remove("active"));
     document.getElementById("tab-specs").classList.add("active");
+
+    // Resetear visibilidad del panel de información (expandido por defecto)
+    const hudPanel = document.querySelector(".ar-hud-panel");
+    if (hudPanel) {
+        hudPanel.classList.remove("hud-collapsed");
+        const btnToggleHud = document.getElementById("btn-toggle-hud");
+        const toggleHudText = document.getElementById("toggle-hud-text");
+        if (btnToggleHud) {
+            const icon = btnToggleHud.querySelector("i");
+            if (icon) icon.className = "fa-solid fa-chevron-down";
+            if (toggleHudText) toggleHudText.innerText = "OCULTAR INFO";
+        }
+    }
 
     // Mostrar el contenedor AR Overlay
     document.getElementById("ar-overlay-view").classList.remove("hidden");

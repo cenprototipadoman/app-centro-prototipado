@@ -757,6 +757,64 @@ body {
     color: #fff;
 }
 
+.toggle-hud-btn {
+    position: absolute;
+    top: 15px;
+    right: 130px;
+    background: rgba(0, 240, 255, 0.15);
+    border: 1px solid var(--border-cyan);
+    color: var(--cyan);
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toggle-hud-btn:hover {
+    background: rgba(0, 240, 255, 0.35);
+    box-shadow: var(--shadow-neon);
+}
+
+.ar-hud-panel {
+    transition: max-height 0.4s ease, flex 0.4s ease, padding 0.4s ease;
+}
+
+.ar-hud-panel.hud-collapsed {
+    flex: 0 0 65px !important;
+    max-height: 65px !important;
+    overflow: hidden !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.ar-hud-panel.hud-collapsed .machine-short-description,
+.ar-hud-panel.hud-collapsed .hud-tabs,
+.ar-hud-panel.hud-collapsed .hud-tab-content {
+    display: none !important;
+}
+
+.ar-hud-panel.hud-collapsed .hud-machine-header {
+    margin-top: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.ar-hud-panel.hud-collapsed .hud-machine-header h2 {
+    font-size: 1.10rem !important;
+}
+
+.ar-hud-panel.hud-collapsed .hud-machine-badge {
+    margin-bottom: 0 !important;
+}
+
 .hud-machine-header {
     margin-top: 10px;
 }
