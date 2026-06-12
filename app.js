@@ -277,8 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
 function startSystem() {
     const splash = document.getElementById("splash-screen");
     const appContainer = document.getElementById("app-container");
-    
+
     splash.classList.remove("active");
+    
+    // Iniciar cámara inmediatamente para mantener el contexto de clic del usuario
+    // (requisito de getUserMedia en navegadores móviles)
+    startScanner();
+
     setTimeout(() => {
         splash.classList.add("hidden");
         appContainer.classList.remove("hidden");
@@ -286,8 +291,6 @@ function startSystem() {
         appContainer.style.transition = "opacity 0.5s ease";
         setTimeout(() => {
             appContainer.style.opacity = 1;
-            // Inicializar la cámara por defecto al cargar el escaner
-            startScanner();
         }, 50);
     }, 300);
 }
@@ -352,10 +355,12 @@ function startScanner() {
         return; // Ya está corriendo
     }
 
-    // Simplificamos qrConfig para máxima compatibilidad (eliminamos aspectRatio estricto)
+    // qrbox responsive: más pequeño en móviles
+    const isMobile = window.innerWidth < 580;
+    const qrSize = isMobile ? Math.min(window.innerWidth * 0.5, 180) : 220;
     const qrConfig = {
-        fps: 15,
-        qrbox: { width: 220, height: 220 }
+        fps: 10,
+        qrbox: { width: qrSize, height: qrSize }
     };
 
     try {
@@ -415,13 +420,12 @@ function startScanner() {
 
 function stopScanner() {
     if (html5QrScanner) {
-        html5QrScanner.stop().then(() => {
-            html5QrScanner = null;
-            document.getElementById("btn-toggle-flashlight").classList.add("hidden");
-            isFlashlightOn = false;
-        }).catch(err => {
-            console.error("Error deteniendo el escaner: ", err);
-            html5QrScanner = null;
+        const scannerRef = html5QrScanner;
+        html5QrScanner = null;
+        isFlashlightOn = false;
+        document.getElementById("btn-toggle-flashlight").classList.add("hidden");
+        scannerRef.stop().catch(err => {
+            console.warn("Error deteniendo el escaner (no crítico): ", err);
         });
     }
 }
@@ -438,9 +442,11 @@ function toggleCamera() {
         isFlashlightOn = false;
         document.getElementById("btn-toggle-flashlight").classList.add("hidden");
         
+        const isMobile = window.innerWidth < 580;
+        const qrSize = isMobile ? Math.min(window.innerWidth * 0.5, 180) : 220;
         const qrConfig = {
-            fps: 15,
-            qrbox: { width: 220, height: 220 }
+            fps: 10,
+            qrbox: { width: qrSize, height: qrSize }
         };
 
         html5QrScanner.start(
@@ -475,7 +481,13 @@ function toggleFlashlight() {
     });
 }
 
+// Bandera para evitar detección doble mientras se procesa el QR
+let isProcessingQR = false;
+
 function onQrScanSuccess(decodedText, decodedResult) {
+    // Evitar disparos múltiples mientras se procesa el QR anterior
+    if (isProcessingQR) return;
+
     // Buscar si el texto escaneado coincide con alguna URL con hash de máquina, o directamente el ID
     let machineId = null;
     
@@ -494,18 +506,20 @@ function onQrScanSuccess(decodedText, decodedResult) {
     }
 
     if (machineId && EQUIPOS_DB[machineId]) {
+        isProcessingQR = true;
+
         // Disparar flash de éxito en pantalla
         const flashEl = document.getElementById("scanner-glow");
         flashEl.classList.remove("hidden");
-        setTimeout(() => {
-            flashEl.classList.add("hidden");
-        }, 400);
+        setTimeout(() => flashEl.classList.add("hidden"), 400);
 
-        // Detener la cámara momentáneamente mientras visualiza
+        // Detener la cámara y luego abrir el overlay
         stopScanner();
-        
-        // Cargar AR Overlay
-        triggerAROverlay(machineId);
+
+        setTimeout(() => {
+            triggerAROverlay(machineId);
+            isProcessingQR = false;
+        }, 300);
     }
 }
 
@@ -657,8 +671,12 @@ function closeAROverlay() {
     }
 
     // Reiniciar el escaner de cámara si estamos en la vista de escaneo
-    if (currentView === "scan-view" && !html5QrScanner) {
-        startScanner();
+    if (currentView === "scan-view") {
+        setTimeout(() => {
+            if (!html5QrScanner) {
+                startScanner();
+            }
+        }, 400);
     }
     
     selectedMachineId = null;
