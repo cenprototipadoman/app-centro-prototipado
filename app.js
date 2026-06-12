@@ -199,6 +199,15 @@ let scene, camera, renderer, animationFrameId;
 let currentMesh = null;
 let canvasContainer = null;
 
+// Variables de estado para Realidad Aumentada Real (Cámara y WebXR)
+let arCameraStream = null;
+let xrSession = null;
+let xrHitTestSource = null;
+let xrReferenceSpace = null;
+let arMode = 'none'; // 'camera' | 'webxr' | 'none'
+let arModelPlaced = false;
+let reticleMesh = null;
+
 /* -------------------------------------------------------------
    INICIALIZACIÓN DEL SISTEMA
    ------------------------------------------------------------- */
@@ -673,20 +682,19 @@ function triggerAROverlay(machineId) {
     // Mostrar el contenedor AR Overlay
     document.getElementById("ar-overlay-view").classList.remove("hidden");
 
-    // Cargar modelo 3D holográfico procedural
-    initHologram3D(machineId);
+    // Iniciar cámara y visor AR real
+    startARCamera(machineId);
 }
 
 function closeAROverlay() {
     document.getElementById("ar-overlay-view").classList.add("hidden");
     
-    // Detener la animación 3D de Three.js
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-    }
+    // Detener la cámara AR y limpiar estados AR
+    stopARCamera();
     
     // Limpiar escena de Three.js
     if (renderer) {
+        renderer.setAnimationLoop(null);
         renderer.dispose();
         const container = document.getElementById("hologram-canvas-container");
         const canvas = container.querySelector("canvas");
@@ -695,6 +703,7 @@ function closeAROverlay() {
         camera = null;
         renderer = null;
         currentMesh = null;
+        reticleMesh = null;
     }
 
     // Reiniciar el escaner de cámara si estamos en la vista de escaneo
@@ -710,6 +719,184 @@ function closeAROverlay() {
     
     // Remover hash de la url de forma limpia
     history.replaceState(null, null, ' ');
+}
+
+/* -------------------------------------------------------------
+   LÓGICA Y CONFIGURACIÓN DE REALIDAD AUMENTADA REAL (CAMARA Y WEBXR)
+   ------------------------------------------------------------- */
+async function startARCamera(machineId) {
+    selectedMachineId = machineId;
+    arModelPlaced = false;
+
+    const videoBg = document.getElementById("ar-camera-bg");
+    const arOverlay = document.getElementById("ar-overlay-view");
+    const arModeBadge = document.getElementById("ar-mode-badge");
+    const arModeText = document.getElementById("ar-mode-text");
+    const btnArPlace = document.getElementById("btn-ar-place");
+
+    // Reset UI por defecto
+    if (videoBg) videoBg.classList.add("hidden");
+    if (btnArPlace) btnArPlace.classList.add("hidden");
+    if (arModeBadge) arModeBadge.classList.add("hidden");
+
+    // Intentar WebXR (ARCore en Android) primero
+    let webxrSupported = false;
+    if (navigator.xr) {
+        try {
+            webxrSupported = await navigator.xr.isSessionSupported('immersive-ar');
+        } catch (e) {
+            console.warn("WebXR isSessionSupported falló:", e);
+        }
+    }
+
+    if (webxrSupported) {
+        arMode = 'webxr';
+        if (arOverlay) arOverlay.classList.add("ar-active");
+        if (arModeBadge) {
+            arModeBadge.classList.remove("hidden");
+            if (arModeText) arModeText.innerText = "MODO AR (WEBXR SURFACE)";
+        }
+        try {
+            await startWebXRSession(machineId);
+            return;
+        } catch (err) {
+            console.warn("Fallo al iniciar sesión WebXR, usando fallback de cámara de fondo:", err);
+        }
+    }
+
+    // Fallback Nivel 1: Cámara trasera usando getUserMedia
+    arMode = 'camera';
+    if (arOverlay) arOverlay.classList.add("ar-active");
+    if (arModeBadge) {
+        arModeBadge.classList.remove("hidden");
+        if (arModeText) arModeText.innerText = "MODO AR (VISTA DE CÁMARA)";
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+            arCameraStream = stream;
+            if (videoBg) {
+                videoBg.srcObject = stream;
+                videoBg.classList.remove("hidden");
+                // Esperar metadatos para que el video tenga dimensiones correctas
+                await new Promise(resolve => videoBg.onloadedmetadata = resolve);
+                videoBg.play().catch(e => console.warn("videoBg.play() falló:", e));
+            }
+        } catch (err) {
+            console.error("No se pudo iniciar la cámara trasera:", err);
+            // Fallback Nivel 2: Visor holográfico clásico (fondo oscuro)
+            arMode = 'none';
+            if (arOverlay) arOverlay.classList.remove("ar-active");
+            if (arModeBadge) {
+                arModeBadge.classList.remove("hidden");
+                if (arModeText) arModeText.innerText = "MODO VISOR 3D (SIN CÁMARA)";
+            }
+        }
+    } else {
+        arMode = 'none';
+        if (arOverlay) arOverlay.classList.remove("ar-active");
+        if (arModeBadge) {
+            arModeBadge.classList.remove("hidden");
+            if (arModeText) arModeText.innerText = "MODO VISOR 3D (SIN CÁMARA)";
+        }
+    }
+
+    // Inicializar Three.js en el modo correspondiente
+    initHologram3D(machineId);
+}
+
+async function startWebXRSession(machineId) {
+    // Inicializar Three.js escena (con fondo transparente y habilitado para WebXR)
+    initHologram3D(machineId);
+
+    const sessionInit = { requiredFeatures: ['local-floor', 'hit-test'] };
+    const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+    
+    xrSession = session;
+    renderer.xr.enabled = true;
+    await renderer.xr.setSession(session);
+
+    // Ocultar video de cámara estándar ya que WebXR maneja la transparencia/passthrough nativa
+    const videoBg = document.getElementById("ar-camera-bg");
+    if (videoBg) videoBg.classList.add("hidden");
+
+    // Mostrar el botón para anclar el modelo
+    const btnArPlace = document.getElementById("btn-ar-place");
+    if (btnArPlace) {
+        btnArPlace.classList.remove("hidden");
+        btnArPlace.onclick = () => {
+            arModelPlaced = true;
+            btnArPlace.classList.add("hidden");
+        };
+    }
+
+    // Obtener los espacios de referencia
+    const viewerSpace = await session.requestReferenceSpace('viewer');
+    xrHitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+    xrReferenceSpace = await session.requestReferenceSpace('local-floor');
+
+    session.addEventListener('end', () => {
+        stopWebXRSession();
+    });
+}
+
+function stopARCamera() {
+    if (xrSession) {
+        xrSession.end();
+        xrSession = null;
+    }
+    
+    if (arCameraStream) {
+        arCameraStream.getTracks().forEach(track => track.stop());
+        arCameraStream = null;
+    }
+
+    const videoBg = document.getElementById("ar-camera-bg");
+    if (videoBg) {
+        videoBg.srcObject = null;
+        videoBg.classList.add("hidden");
+    }
+
+    const arOverlay = document.getElementById("ar-overlay-view");
+    if (arOverlay) {
+        arOverlay.classList.remove("ar-active");
+    }
+
+    const btnArPlace = document.getElementById("btn-ar-place");
+    if (btnArPlace) {
+        btnArPlace.classList.add("hidden");
+    }
+
+    const arModeBadge = document.getElementById("ar-mode-badge");
+    if (arModeBadge) {
+        arModeBadge.classList.add("hidden");
+    }
+
+    arMode = 'none';
+    arModelPlaced = false;
+    xrHitTestSource = null;
+    xrReferenceSpace = null;
+}
+
+function stopWebXRSession() {
+    xrSession = null;
+    xrHitTestSource = null;
+    xrReferenceSpace = null;
+    arModelPlaced = false;
+    
+    // Si el overlay sigue abierto, volver al modo de cámara como fallback
+    const arOverlay = document.getElementById("ar-overlay-view");
+    if (selectedMachineId && arOverlay && !arOverlay.classList.contains("hidden")) {
+        startARCamera(selectedMachineId);
+    }
 }
 
 /* -------------------------------------------------------------
@@ -730,6 +917,9 @@ function initHologram3D(machineId) {
     // Limpieza previa por seguridad
     const oldCanvas = canvasContainer.querySelector("canvas");
     if (oldCanvas) canvasContainer.removeChild(oldCanvas);
+    if (renderer) {
+        renderer.setAnimationLoop(null);
+    }
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
     // Dimensiones
@@ -741,38 +931,64 @@ function initHologram3D(machineId) {
 
     // Cámara
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 4, 8);
-    camera.lookAt(0, 0.5, 0);
+    if (arMode !== 'none') {
+        // En AR, la cámara se sitúa a nivel de los ojos (1.6m) y mira hacia enfrente (z = -2)
+        camera.position.set(0, 1.6, 0);
+        camera.lookAt(0, 1.2, -2);
+    } else {
+        // Visor holográfico clásico
+        camera.position.set(0, 4, 8);
+        camera.lookAt(0, 0.5, 0);
+    }
 
-    // Renderizador con fondo transparente
+    // Renderizador con soporte transparente
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    if (arMode !== 'none') {
+        renderer.setClearColor(0x000000, 0); // transparente
+    }
     canvasContainer.appendChild(renderer.domElement);
 
-    // Fondo de escena - color oscuro espacial
-    scene.background = new THREE.Color(0x0a0e27);
+    // Fondo de escena
+    if (arMode === 'none') {
+        scene.background = new THREE.Color(0x0a0e27);
+    } else {
+        scene.background = null;
+    }
 
     // Luces
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, arMode !== 'none' ? 0.7 : 0.5);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x00f0ff, 1.5, 20);
+    const pointLight = new THREE.PointLight(0x00f0ff, arMode !== 'none' ? 1.8 : 1.5, 20);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
     
-    const pointLightGreen = new THREE.PointLight(0x94b43b, 1, 20);
+    const pointLightGreen = new THREE.PointLight(0x94b43b, arMode !== 'none' ? 1.2 : 1.0, 20);
     pointLightGreen.position.set(-5, 3, -5);
     scene.add(pointLightGreen);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    const dirLight = new THREE.DirectionalLight(0xffffff, arMode !== 'none' ? 1.5 : 1.0);
     dirLight.position.set(2, 5, 3);
     scene.add(dirLight);
 
-    // Agregar rejilla de base holográfica
-    const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
-    gridHelper.position.y = -0.5;
-    scene.add(gridHelper);
+    // Agregar rejilla de base holográfica solo en visor clásico
+    if (arMode === 'none') {
+        const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+    }
+
+    // Agregar retículo de posicionamiento si es WebXR
+    if (arMode === 'webxr') {
+        const reticleGeo = new THREE.RingGeometry(0.12, 0.15, 32);
+        reticleGeo.rotateX(-Math.PI / 2);
+        const reticleMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
+        reticleMesh = new THREE.Mesh(reticleGeo, reticleMat);
+        reticleMesh.visible = false;
+        scene.add(reticleMesh);
+    }
 
     // Obtener referencias de UI para estado de carga
     const glitchText = canvasContainer.querySelector(".hologram-glitch-text");
@@ -787,31 +1003,42 @@ function initHologram3D(machineId) {
         loader.load(
             MODEL_FILES[machineId],
             (gltf) => {
-                if (glitchText) glitchText.innerText = "CONEXIÓN HOLOGRÁFICA ESTABLE";
-                if (subText) subText.innerText = "Gira la representación táctilmente";
+                if (glitchText) glitchText.innerText = arMode !== 'none' ? "REALIDAD AUMENTADA LISTA" : "CONEXIÓN HOLOGRÁFICA ESTABLE";
+                if (subText) subText.innerText = arMode === 'webxr' ? "Apunta al suelo y presiona ANCLAR" : "Gira la representación táctilmente";
 
                 const group = new THREE.Group();
 
-                // Aplicar estilo holográfico premium
+                // Aplicar estilo según el modo (holograma translúcido vs AR sólido realista)
                 gltf.scene.traverse((child) => {
                     if (child.isMesh) {
-                        child.material = new THREE.MeshStandardMaterial({
-                            color: 0x00a8ff,
-                            emissive: 0x001122,
-                            roughness: 0.4,
-                            metalness: 0.8,
-                            transparent: true,
-                            opacity: 0.6,
-                            side: THREE.DoubleSide
-                        });
+                        if (arMode !== 'none') {
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: 0xffffff, // color original de las texturas/colores del GLB
+                                roughness: 0.3,
+                                metalness: 0.5,
+                                transparent: true,
+                                opacity: 0.9,
+                                side: THREE.DoubleSide
+                            });
+                        } else {
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: 0x00a8ff,
+                                emissive: 0x001122,
+                                roughness: 0.4,
+                                metalness: 0.8,
+                                transparent: true,
+                                opacity: 0.6,
+                                side: THREE.DoubleSide
+                            });
 
-                        // Agregar malla de alambre brillante (wireframe) superpuesta
-                        const wireframe = new THREE.WireframeGeometry(child.geometry);
-                        const line = new THREE.LineSegments(wireframe);
-                        line.material.color.setHex(0x00f0ff);
-                        line.material.transparent = true;
-                        line.material.opacity = 0.25;
-                        child.add(line);
+                            // Agregar malla de alambre brillante (wireframe) superpuesta (solo holograma)
+                            const wireframe = new THREE.WireframeGeometry(child.geometry);
+                            const line = new THREE.LineSegments(wireframe);
+                            line.material.color.setHex(0x00f0ff);
+                            line.material.transparent = true;
+                            line.material.opacity = 0.25;
+                            child.add(line);
+                        }
                     }
                 });
 
@@ -836,14 +1063,21 @@ function initHologram3D(machineId) {
                 box.getCenter(center);
 
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const targetSize = 2.5;
+                const targetSize = arMode !== 'none' ? 1.0 : 2.5; // tamaño más pequeño en AR para que encaje mejor
                 const scale = targetSize / (maxDim || 1);
 
                 gltf.scene.scale.set(scale, scale, scale);
 
-                // Alinear el suelo a y = -0.5 (sobre la rejilla) y centrar en X/Z
-                const yOffset = -0.5 - (box.min.y * scale);
-                gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
+                // Alinear el suelo
+                if (arMode !== 'none') {
+                    // Colocar en frente de la cámara del usuario (z = -1.8)
+                    const yOffset = -0.3 - (box.min.y * scale);
+                    gltf.scene.position.set(-center.x * scale, yOffset, -1.8 - center.z * scale);
+                } else {
+                    // Alinear el suelo a y = -0.5 (sobre la rejilla) y centrar en X/Z
+                    const yOffset = -0.5 - (box.min.y * scale);
+                    gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
+                }
 
                 group.add(gltf.scene);
                 currentMesh = group;
@@ -852,7 +1086,7 @@ function initHologram3D(machineId) {
             undefined,
             (error) => {
                 console.error("Error cargando modelo GLB:", error, "Usando fallback procedimental.");
-                if (glitchText) glitchText.innerText = "FALLBACK HOLOGRÁFICO ACTIVO";
+                if (glitchText) glitchText.innerText = "FALLBACK PROCEDIMENTAL ACTIVO";
                 if (subText) subText.innerText = "Gira la representación táctilmente";
                 createProceduralHologram(machineId);
             }
@@ -861,7 +1095,7 @@ function initHologram3D(machineId) {
         createProceduralHologram(machineId);
     }
 
-    // Interacción táctil para rotar el modelo
+    // Interacción táctil para rotar el modelo (para modo cámara o visor)
     let isDragging = false;
     let previousMousePosition = { x: 0, y: 0 };
     
@@ -906,31 +1140,61 @@ function initHologram3D(machineId) {
     });
     renderer.domElement.addEventListener('touchend', stopDrag);
 
-    // Ciclo de animación
+    // Ciclo de animación unificado para WebXR y Standard
     let clock = new THREE.Clock();
     
-    function animate() {
-        animationFrameId = requestAnimationFrame(animate);
-
+    function animate(timestamp, frame) {
         const elapsedTime = clock.getElapsedTime();
 
+        // Lógica de Hit Test para WebXR
+        if (frame && arMode === 'webxr' && xrHitTestSource) {
+            const hitTestResults = frame.getHitTestResults(xrHitTestSource);
+            if (hitTestResults.length > 0) {
+                const hit = hitTestResults[0];
+                const pose = hit.getPose(xrReferenceSpace);
+                
+                if (!arModelPlaced) {
+                    if (reticleMesh) {
+                        reticleMesh.visible = true;
+                        reticleMesh.position.set(
+                            pose.transform.position.x,
+                            pose.transform.position.y,
+                            pose.transform.position.z
+                        );
+                        reticleMesh.quaternion.copy(pose.transform.orientation);
+                    }
+                    if (currentMesh) {
+                        currentMesh.visible = true;
+                        currentMesh.position.copy(reticleMesh.position);
+                        currentMesh.quaternion.copy(reticleMesh.quaternion);
+                    }
+                } else {
+                    if (reticleMesh) reticleMesh.visible = false;
+                }
+            } else {
+                if (reticleMesh) reticleMesh.visible = false;
+            }
+        }
+
         if (currentMesh) {
-            // Rotación por defecto pasiva lenta
+            // Rotación pasiva lenta
             if (!isDragging) {
-                currentMesh.rotation.y += 0.006;
+                if (arMode !== 'webxr' || arModelPlaced) {
+                    currentMesh.rotation.y += 0.006;
+                }
             }
             
             // Animación especial por máquina
             animateProceduralHologram(machineId, elapsedTime);
         }
 
-        // Efecto holográfico de fluctuación de brillo
-        pointLight.intensity = 1.2 + Math.sin(elapsedTime * 6) * 0.2;
+        // Efecto de parpadeo holográfico
+        pointLight.intensity = (arMode !== 'none' ? 1.5 : 1.2) + Math.sin(elapsedTime * 6) * 0.2;
 
         renderer.render(scene, camera);
     }
     
-    animate();
+    renderer.setAnimationLoop(animate);
 
     // Redimensionado del canvas
     window.addEventListener("resize", onWindowResize);

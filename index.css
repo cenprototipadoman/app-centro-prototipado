@@ -1612,3 +1612,84 @@ body {
         page-break-inside: avoid !important;
     }
 }
+
+/* =============================================================
+   ESTILOS ADICIONALES PARA REALIDAD AUMENTADA (AR) REAL
+   ============================================================= */
+
+/* Cámara trasera en tiempo real */
+#ar-camera-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+
+/* El contenedor de canvas de Three.js es transparente */
+#hologram-canvas-container {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+}
+
+#ar-overlay-view {
+    overflow: hidden;
+}
+
+/* Transparencias en el modo AR activo */
+#ar-overlay-view.ar-active {
+    background: transparent !important;
+}
+
+/* Indicador flotante del modo de AR */
+.ar-mode-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    background: rgba(12, 18, 36, 0.85);
+    border: 1px solid var(--border-cyan);
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-neon);
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.5px;
+}
+
+/* Botón inferior para colocar/anclar modelo en WebXR */
+.ar-place-btn {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-neon-high);
+    border-radius: 30px;
+    padding: 14px 28px;
+    animation: buttonPulse 2s infinite alternate;
+}
+
+@keyframes buttonPulse {
+    0% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.3); }
+    100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.8); }
+}
+
+@media (min-width: 768px) {
+    /* En pantallas grandes el overlay ocupa la mitad derecha */
+    #ar-overlay-view.ar-active {
+        background: transparent !important;
+    }
+}

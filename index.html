@@ -184,6 +184,21 @@
 
             <!-- AR HOLOGRAPHIC OVERLAY VIEW (Fades in over camera when machine detected) -->
             <div id="ar-overlay-view" class="hidden">
+                <!-- Video background for live camera feed -->
+                <video id="ar-camera-bg" autoplay playsinline muted class="hidden"></video>
+
+                <!-- AR Status Badge -->
+                <div id="ar-mode-badge" class="ar-mode-badge hidden">
+                    <span class="pulse-indicator"></span>
+                    <span id="ar-mode-text">MODO HOLOGRÁFICO</span>
+                </div>
+
+                <!-- WebXR Placement Reticle / Action Button -->
+                <button id="btn-ar-place" class="btn btn-secondary ar-place-btn hidden">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>ANCLAR EN SUPERFICIE</span>
+                </button>
+
                 <!-- 3D Hologram Area -->
                 <div id="hologram-canvas-container">
                     <div class="hologram-indicator">
