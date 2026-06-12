@@ -196,6 +196,7 @@ let isFlashlightOn = false;
 
 // Variables de Three.js para la visualización holográfica
 let scene, camera, renderer, animationFrameId;
+let orbitControls = null;
 let currentMesh = null;
 let canvasContainer = null;
 
@@ -773,6 +774,7 @@ function closeAROverlay() {
         renderer = null;
         currentMesh = null;
         reticleMesh = null;
+        orbitControls = null;
     }
 
     // Reiniciar el escaner de cámara si estamos en la vista de escaneo
@@ -951,7 +953,6 @@ async function startWebXRSession(machineId) {
     if (videoBg) videoBg.classList.add("hidden");
 
     // Mostrar el botón para anclar el modelo
-    // Mostrar el botón para anclar el modelo
     const btnArPlace = document.getElementById("btn-ar-place");
     if (btnArPlace) {
         btnArPlace.classList.remove("hidden");
@@ -1066,29 +1067,26 @@ function initHologram3D(machineId) {
     }
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    // Dimensiones
-    const width = canvasContainer.clientWidth || window.innerWidth;
-    const height = canvasContainer.clientHeight || (window.innerHeight * 0.4);
-
     // Escena
     scene = new THREE.Scene();
 
     // Cámara
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    if (arMode !== 'none') {
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    if (arMode === 'webxr' || arMode === 'camera') {
         // En AR, la cámara se sitúa a nivel de los ojos (1.6m) y mira hacia enfrente (z = -2)
         camera.position.set(0, 1.6, 0);
         camera.lookAt(0, 1.2, -2);
     } else {
-        // Visor holográfico clásico
-        camera.position.set(0, 4, 8);
-        camera.lookAt(0, 0.5, 0);
+        // Visor holográfico clásico y preview
+        camera.position.set(0, 1.5, 3.5);
+        camera.lookAt(0, 0, 0);
     }
 
     // Renderizador con soporte transparente
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = (arMode === 'webxr');
     if (arMode !== 'none') {
         renderer.setClearColor(0x000000, 0); // transparente
     }
@@ -1105,30 +1103,17 @@ function initHologram3D(machineId) {
     const ambientLight = new THREE.AmbientLight(0xffffff, arMode !== 'none' ? 0.7 : 0.5);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x00f0ff, arMode !== 'none' ? 1.8 : 1.5, 20);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
-    
-    const pointLightGreen = new THREE.PointLight(0x94b43b, arMode !== 'none' ? 1.2 : 1.0, 20);
-    pointLightGreen.position.set(-5, 3, -5);
-    scene.add(pointLightGreen);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, arMode !== 'none' ? 1.5 : 1.0);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 3);
     dirLight.position.set(2, 5, 3);
     scene.add(dirLight);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    if (arMode === 'webxr' || arMode === 'camera') {
-        // En AR el modelo es "fijo" y el usuario se mueve
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.enabled = false; // Desactivados temporalmente
-    }
-
-    // Agregar rejilla de base holográfica solo en visor clásico
-    if (arMode === 'none') {
+    // Solo agregar OrbitControls si no estamos en modos fijos de cámara/AR
+    if (arMode === 'none' || arMode === 'preview') {
+        orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+        
+        // Agregar rejilla de base holográfica
         const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
         gridHelper.position.y = -0.5;
         scene.add(gridHelper);
