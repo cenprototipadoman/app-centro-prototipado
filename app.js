@@ -903,6 +903,17 @@ async function startWebXRSession(machineId) {
     session.addEventListener('end', () => {
         stopWebXRSession();
     });
+    session.addEventListener('select', onXRSessionSelect);
+}
+
+function onXRSessionSelect() {
+    if (arMode === 'webxr' && !arModelPlaced) {
+        if (reticleMesh && reticleMesh.visible) {
+            arModelPlaced = true;
+            const btnArPlace = document.getElementById("btn-ar-place");
+            if (btnArPlace) btnArPlace.classList.add("hidden");
+        }
+    }
 }
 
 function stopARCamera() {
@@ -1056,6 +1067,8 @@ function initHologram3D(machineId) {
     const glitchText = canvasContainer.querySelector(".hologram-glitch-text");
     const subText = canvasContainer.querySelector(".hologram-sub-text");
 
+    const activeScene = scene;
+
     // Verificar si el equipo tiene un modelo 3D asignado
     if (MODEL_FILES[machineId]) {
         if (glitchText) glitchText.innerText = "CARGANDO MODELO 3D...";
@@ -1065,8 +1078,11 @@ function initHologram3D(machineId) {
         loader.load(
             MODEL_FILES[machineId],
             (gltf) => {
+                // Si la escena activa cambió antes de terminar la carga, descartar
+                if (scene !== activeScene) return;
+
                 if (glitchText) glitchText.innerText = arMode !== 'none' ? "REALIDAD AUMENTADA LISTA" : "CONEXIÓN HOLOGRÁFICA ESTABLE";
-                if (subText) subText.innerText = arMode === 'webxr' ? "Apunta al suelo y presiona ANCLAR" : "Gira la representación táctilmente";
+                if (subText) subText.innerText = arMode === 'webxr' ? "Apunta al suelo y presiona ANCLAR o toca la pantalla" : "Gira la representación táctilmente";
 
                 const group = new THREE.Group();
 
@@ -1074,14 +1090,12 @@ function initHologram3D(machineId) {
                 gltf.scene.traverse((child) => {
                     if (child.isMesh) {
                         if (arMode !== 'none') {
-                            child.material = new THREE.MeshStandardMaterial({
-                                color: 0xffffff, // color original de las texturas/colores del GLB
-                                roughness: 0.3,
-                                metalness: 0.5,
-                                transparent: true,
-                                opacity: 0.9,
-                                side: THREE.DoubleSide
-                            });
+                            // En modo AR mantenemos el material y texturas originales
+                            if (child.material) {
+                                child.material.transparent = true;
+                                child.material.opacity = 0.95;
+                                child.material.side = THREE.DoubleSide;
+                            }
                         } else {
                             child.material = new THREE.MeshStandardMaterial({
                                 color: 0x00a8ff,
@@ -1131,13 +1145,13 @@ function initHologram3D(machineId) {
                 gltf.scene.scale.set(scale, scale, scale);
 
                 // Alinear el suelo
-                if (arMode !== 'none') {
-                    // Colocar en frente de la cámara del usuario (z = -1.8)
+                if (arMode === 'camera') {
+                    // Colocar en frente de la cámara del usuario (z = -1.8) en modo passthrough
                     const yOffset = -0.3 - (box.min.y * scale);
                     gltf.scene.position.set(-center.x * scale, yOffset, -1.8 - center.z * scale);
                 } else {
-                    // Alinear el suelo a y = -0.5 (sobre la rejilla) y centrar en X/Z
-                    const yOffset = -0.5 - (box.min.y * scale);
+                    // En WebXR o visor normal, centrado en Z para alinearse al retículo perfectamente
+                    const yOffset = (arMode === 'webxr' ? 0.0 : -0.5) - (box.min.y * scale);
                     gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
                 }
 
@@ -1147,6 +1161,7 @@ function initHologram3D(machineId) {
             },
             undefined,
             (error) => {
+                if (scene !== activeScene) return;
                 console.error("Error cargando modelo GLB:", error, "Usando fallback procedimental.");
                 if (glitchText) glitchText.innerText = "FALLBACK PROCEDIMENTAL ACTIVO";
                 if (subText) subText.innerText = "Gira la representación táctilmente";
