@@ -793,7 +793,7 @@ function closeAROverlay() {
 /* -------------------------------------------------------------
    LÓGICA Y CONFIGURACIÓN DE REALIDAD AUMENTADA REAL (CAMARA Y WEBXR)
    ------------------------------------------------------------- */
-async function startARCamera(machineId) {
+async function startARCamera(machineId, forceFallback = false) {
     selectedMachineId = machineId;
     arModelPlaced = false;
 
@@ -818,14 +818,14 @@ async function startARCamera(machineId) {
         btnGestureMode.querySelector("i").className = "fa-solid fa-arrows-up-down-left-right";
         if (labelGestureMode) labelGestureMode.innerText = "MOVER";
     }
-    const sliderDepth = document.getElementById("slider-ar-depth");
-    if (sliderDepth) sliderDepth.value = "1.8";
-    const sliderScale = document.getElementById("slider-ar-scale");
-    if (sliderScale) sliderScale.value = "1.0";
+
+    // Configurar sliders a valores por defecto
+    document.getElementById("slider-ar-depth").value = 1.8;
+    document.getElementById("slider-ar-scale").value = 1.0;
 
     // Intentar WebXR (ARCore en Android) primero
     let webxrSupported = false;
-    if (navigator.xr) {
+    if (navigator.xr && !forceFallback) {
         try {
             webxrSupported = await navigator.xr.isSessionSupported('immersive-ar');
         } catch (e) {
@@ -841,12 +841,29 @@ async function startARCamera(machineId) {
             if (arModeText) arModeText.innerText = "MODO AR (WEBXR SURFACE)";
         }
         if (controlsOverlay) controlsOverlay.classList.remove("hidden");
-        try {
-            await startWebXRSession(machineId);
-            return;
-        } catch (err) {
-            console.warn("Fallo al iniciar sesión WebXR, usando fallback de cámara de fondo:", err);
+        
+        // Fix: WebXR requiere un "User Gesture" para iniciar.
+        // Como venimos del escaneo automático, debemos pedir un toque manual.
+        if (btnArPlace) {
+            btnArPlace.classList.remove("hidden");
+            btnArPlace.innerHTML = '<i class="fa-solid fa-vr-cardboard"></i><span> INICIAR ENTORNO AR</span>';
+            
+            // Reemplazar nodo para limpiar eventos previos
+            const newBtn = btnArPlace.cloneNode(true);
+            btnArPlace.parentNode.replaceChild(newBtn, btnArPlace);
+            
+            newBtn.onclick = async () => {
+                newBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span> CARGANDO...</span>';
+                try {
+                    await startWebXRSession(machineId);
+                } catch (err) {
+                    console.warn("Fallo al iniciar sesión WebXR tras toque de usuario, usando fallback:", err);
+                    newBtn.classList.add("hidden");
+                    startARCamera(machineId, true);
+                }
+            };
         }
+        return;
     }
 
     // Fallback Nivel 1: Cámara trasera usando getUserMedia
@@ -928,12 +945,18 @@ async function startWebXRSession(machineId) {
     if (videoBg) videoBg.classList.add("hidden");
 
     // Mostrar el botón para anclar el modelo
+    // Mostrar el botón para anclar el modelo
     const btnArPlace = document.getElementById("btn-ar-place");
     if (btnArPlace) {
         btnArPlace.classList.remove("hidden");
-        btnArPlace.onclick = () => {
+        btnArPlace.innerHTML = '<i class="fa-solid fa-location-dot"></i><span> FIJAR MODELO AQUÍ</span>';
+        
+        const newBtn = btnArPlace.cloneNode(true);
+        btnArPlace.parentNode.replaceChild(newBtn, btnArPlace);
+        
+        newBtn.onclick = () => {
             arModelPlaced = true;
-            btnArPlace.classList.add("hidden");
+            newBtn.classList.add("hidden");
         };
     }
 
@@ -1010,7 +1033,7 @@ function stopWebXRSession() {
     // Si el overlay sigue abierto, volver al modo de cámara como fallback
     const arOverlay = document.getElementById("ar-overlay-view");
     if (selectedMachineId && arOverlay && !arOverlay.classList.contains("hidden")) {
-        startARCamera(selectedMachineId);
+        startARCamera(selectedMachineId, true);
     }
 }
 
