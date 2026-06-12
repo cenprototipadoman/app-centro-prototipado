@@ -688,11 +688,17 @@ body {
     flex-direction: column;
 }
 
+#ar-overlay-view.ar-active {
+    background: transparent !important;
+}
+
 /* 3D Canvas Area (Top half on mobile, left on desktop) */
 #hologram-canvas-container {
     flex: 1.1;
     position: relative;
     width: 100%;
+    min-height: 0; /* Prevents canvas from expanding the flex item */
+    z-index: 1;
 }
 
 .hologram-indicator {
@@ -733,6 +739,7 @@ body {
     overflow-y: auto;
     position: relative;
     max-height: 55%;
+    z-index: 10;
 }
 
 .close-ar-panel {

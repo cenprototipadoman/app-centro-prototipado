@@ -902,12 +902,19 @@ async function startARCamera(machineId) {
 }
 
 async function startWebXRSession(machineId) {
+    // Initialize beforexrselect to prevent WebXR select events when interacting with HUD
+    const overlayView = document.getElementById('ar-overlay-view');
+    overlayView.addEventListener('beforexrselect', ev => {
+        if (ev.target.closest('.ar-hud-panel') || ev.target.closest('.scanner-controls')) {
+            ev.preventDefault();
+        }
+    });
+
     // Inicializar Three.js escena (con fondo transparente y habilitado para WebXR)
     initHologram3D(machineId);
 
     const sessionInit = { 
-        requiredFeatures: ['local-floor', 'hit-test'],
-        optionalFeatures: ['dom-overlay'],
+        requiredFeatures: ['local-floor', 'hit-test', 'dom-overlay'],
         domOverlay: { root: document.getElementById('ar-overlay-view') }
     };
     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
