@@ -905,7 +905,11 @@ async function startWebXRSession(machineId) {
     // Inicializar Three.js escena (con fondo transparente y habilitado para WebXR)
     initHologram3D(machineId);
 
-    const sessionInit = { requiredFeatures: ['local-floor', 'hit-test'] };
+    const sessionInit = { 
+        requiredFeatures: ['local-floor', 'hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.getElementById('ar-overlay-view') }
+    };
     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
     
     xrSession = session;
