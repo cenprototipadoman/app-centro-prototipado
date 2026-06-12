@@ -855,6 +855,7 @@ async function startARCamera(machineId, forceFallback = false) {
             newBtn.onclick = async () => {
                 newBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span> CARGANDO...</span>';
                 try {
+                    arMode = 'webxr'; // Cambiar el modo antes de iniciar WebXR
                     await startWebXRSession(machineId);
                 } catch (err) {
                     console.warn("Fallo al iniciar sesión WebXR tras toque de usuario, usando fallback:", err);
@@ -863,6 +864,11 @@ async function startARCamera(machineId, forceFallback = false) {
                 }
             };
         }
+        
+        // Mostrar el modelo en modo de vista previa antes de entrar a AR
+        arMode = 'preview';
+        initHologram3D(machineId);
+        
         return;
     }
 
@@ -1111,6 +1117,16 @@ function initHologram3D(machineId) {
     dirLight.position.set(2, 5, 3);
     scene.add(dirLight);
 
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    if (arMode === 'webxr' || arMode === 'camera') {
+        // En AR el modelo es "fijo" y el usuario se mueve
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.enabled = false; // Desactivados temporalmente
+    }
+
     // Agregar rejilla de base holográfica solo en visor clásico
     if (arMode === 'none') {
         const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
@@ -1207,6 +1223,7 @@ function initHologram3D(machineId) {
                 let targetSize = 2.5; // Visor normal
                 if (arMode === 'webxr') targetSize = 1.0;
                 else if (arMode === 'camera') targetSize = 0.8;
+                else if (arMode === 'preview') targetSize = 1.4; // Proporcional a la pantalla antes de AR
                 
                 const scale = targetSize / (maxDim || 1);
 
@@ -1217,6 +1234,10 @@ function initHologram3D(machineId) {
                     // Colocar perfectamente frente a la cámara
                     const yOffset = 1.0 - (box.min.y * scale) - (size.y * scale / 2);
                     gltf.scene.position.set(-center.x * scale, yOffset, -2.5 - center.z * scale);
+                } else if (arMode === 'preview') {
+                    // En vista previa, un poco más abajo para dar espacio al botón superior y que no se pierda
+                    const yOffset = -0.5 - (box.min.y * scale);
+                    gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
                 } else {
                     // En WebXR o visor normal, centrado en Z para alinearse al retículo o base
                     const yOffset = (arMode === 'webxr' ? 0.0 : -0.5) - (box.min.y * scale);
