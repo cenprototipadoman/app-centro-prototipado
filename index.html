@@ -184,6 +184,28 @@
 
             <!-- AR HOLOGRAPHIC OVERLAY VIEW (Fades in over camera when machine detected) -->
             <div id="ar-overlay-view" class="hidden">
+
+                <!-- [AR] Fondo de cámara real — se activa cuando el dispositivo tiene cámara -->
+                <video id="ar-camera-bg" autoplay playsinline muted></video>
+
+                <!-- [AR] Reticulo de superficie (WebXR hit-test) -->
+                <div id="ar-reticle" class="hidden">
+                    <div class="reticle-ring"></div>
+                    <div class="reticle-dot"></div>
+                </div>
+
+                <!-- [AR] Badge indicador del modo activo -->
+                <div id="ar-mode-badge" class="hidden">
+                    <i class="fa-solid fa-camera"></i>
+                    <span id="ar-mode-label">AR ACTIVO</span>
+                </div>
+
+                <!-- [AR] Botón para anclar modelo en superficie (WebXR) -->
+                <button id="btn-ar-place" class="ar-place-btn hidden" title="Colocar modelo aquí">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span>Colocar aquí</span>
+                </button>
+
                 <!-- 3D Hologram Area -->
                 <div id="hologram-canvas-container">
                     <div class="hologram-indicator">
