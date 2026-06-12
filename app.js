@@ -735,16 +735,16 @@ function triggerAROverlay(machineId) {
     panes.forEach(pane => pane.classList.remove("active"));
     document.getElementById("tab-specs").classList.add("active");
 
-    // Resetear visibilidad del panel de información (expandido por defecto)
+    // Iniciar con el panel de información minimizado por defecto
     const hudPanel = document.querySelector(".ar-hud-panel");
     if (hudPanel) {
-        hudPanel.classList.remove("hud-collapsed");
+        hudPanel.classList.add("hud-collapsed");
         const btnToggleHud = document.getElementById("btn-toggle-hud");
         const toggleHudText = document.getElementById("toggle-hud-text");
         if (btnToggleHud) {
             const icon = btnToggleHud.querySelector("i");
-            if (icon) icon.className = "fa-solid fa-chevron-down";
-            if (toggleHudText) toggleHudText.innerText = "OCULTAR INFO";
+            if (icon) icon.className = "fa-solid fa-chevron-up";
+            if (toggleHudText) toggleHudText.innerText = "MOSTRAR INFO";
         }
     }
 
@@ -1181,18 +1181,21 @@ function initHologram3D(machineId) {
                 box.getCenter(center);
 
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const targetSize = arMode !== 'none' ? 1.0 : 2.5; // tamaño más pequeño en AR para que encaje mejor
+                let targetSize = 2.5; // Visor normal
+                if (arMode === 'webxr') targetSize = 1.0;
+                else if (arMode === 'camera') targetSize = 0.8;
+                
                 const scale = targetSize / (maxDim || 1);
 
                 gltf.scene.scale.set(scale, scale, scale);
 
-                // Alinear el suelo
+                // Alinear el modelo según el modo
                 if (arMode === 'camera') {
-                    // Colocar en frente de la cámara del usuario (z = -1.8) en modo passthrough
-                    const yOffset = -0.3 - (box.min.y * scale);
-                    gltf.scene.position.set(-center.x * scale, yOffset, -1.8 - center.z * scale);
+                    // Colocar perfectamente frente a la cámara
+                    const yOffset = 1.0 - (box.min.y * scale) - (size.y * scale / 2);
+                    gltf.scene.position.set(-center.x * scale, yOffset, -2.5 - center.z * scale);
                 } else {
-                    // En WebXR o visor normal, centrado en Z para alinearse al retículo perfectamente
+                    // En WebXR o visor normal, centrado en Z para alinearse al retículo o base
                     const yOffset = (arMode === 'webxr' ? 0.0 : -0.5) - (box.min.y * scale);
                     gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
                 }

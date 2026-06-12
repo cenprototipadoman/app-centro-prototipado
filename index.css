@@ -747,7 +747,7 @@ body {
 }
 
 .ar-hud-panel.hud-collapsed {
-    transform: translateY(calc(100% - 40px));
+    transform: translateY(0);
 }
 
 .toggle-hud-btn {
@@ -807,23 +807,24 @@ body {
 }
 
 .toggle-hud-btn {
-    position: absolute;
-    top: 15px;
-    right: 130px;
+    align-self: center;
     background: rgba(0, 240, 255, 0.15);
     border: 1px solid var(--border-cyan);
     color: var(--cyan);
     font-family: var(--font-ui);
     font-weight: 700;
-    font-size: 0.75rem;
-    padding: 6px 12px;
-    border-radius: 6px;
+    font-size: 0.8rem;
+    padding: 8px 20px;
+    border-radius: 20px;
     cursor: pointer;
     text-transform: uppercase;
     transition: var(--transition-smooth);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-bottom: 5px;
 }
 
 .toggle-hud-btn:hover {
@@ -836,32 +837,29 @@ body {
 }
 
 .ar-hud-panel.hud-collapsed {
-    flex: 0 0 65px !important;
-    max-height: 65px !important;
+    flex: 0 0 60px !important;
+    max-height: 60px !important;
     overflow: hidden !important;
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
 }
 
 .ar-hud-panel.hud-collapsed .machine-short-description,
 .ar-hud-panel.hud-collapsed .hud-tabs,
-.ar-hud-panel.hud-collapsed .hud-tab-content {
+.ar-hud-panel.hud-collapsed .hud-tab-content,
+.ar-hud-panel.hud-collapsed .hud-machine-header {
     display: none !important;
 }
 
-.ar-hud-panel.hud-collapsed .hud-machine-header {
-    margin-top: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-}
-
-.ar-hud-panel.hud-collapsed .hud-machine-header h2 {
-    font-size: 1.10rem !important;
-}
-
-.ar-hud-panel.hud-collapsed .hud-machine-badge {
-    margin-bottom: 0 !important;
+.ar-hud-panel.hud-collapsed .toggle-hud-btn {
+    background: rgba(6, 9, 19, 0.85);
+    backdrop-filter: blur(12px);
+    padding: 12px 25px;
+    border-radius: 25px;
 }
 
 .hud-machine-header {
