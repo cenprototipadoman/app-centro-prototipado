@@ -725,21 +725,63 @@ body {
     color: var(--text-secondary);
 }
 
-/* Floating Glass HUD Panel (Bottom half on mobile) */
+/* Floating Glass HUD Panel (Bottom sheet style) */
 .ar-hud-panel {
-    flex: 1.3;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-top: 2px solid var(--border-cyan);
-    padding: 20px;
+    padding: 10px 20px 20px 20px;
     display: flex;
     flex-direction: column;
     gap: 15px;
     overflow-y: auto;
-    position: relative;
     max-height: 55%;
     z-index: 10;
+    background: rgba(6, 9, 19, 0.85);
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.ar-hud-panel.hud-collapsed {
+    transform: translateY(calc(100% - 40px));
+}
+
+.toggle-hud-btn {
+    align-self: center;
+    background: transparent;
+    border: none;
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-bottom: 5px;
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.ar-hud-panel.hud-collapsed .machine-short-description,
+.ar-hud-panel.hud-collapsed .hud-tabs,
+.ar-hud-panel.hud-collapsed .hud-tab-content,
+.ar-hud-panel.hud-collapsed .hud-header {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.ar-hud-panel .machine-short-description,
+.ar-hud-panel .hud-tabs,
+.ar-hud-panel .hud-tab-content,
+.ar-hud-panel .hud-header {
+    opacity: 1;
+    transition: opacity 0.3s 0.1s;
 }
 
 .close-ar-panel {

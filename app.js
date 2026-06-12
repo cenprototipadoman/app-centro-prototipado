@@ -1303,12 +1303,14 @@ function initHologram3D(machineId) {
         }
 
         if (currentMesh) {
-            // Rotación pasiva lenta
+            // Rotación pasiva lenta (desactivada por solicitud)
+            /*
             if (!isDragging) {
                 if (arMode !== 'webxr' || arModelPlaced) {
                     currentMesh.rotation.y += 0.006;
                 }
             }
+            */
             
             // Animación especial por máquina
             animateProceduralHologram(machineId, elapsedTime);
