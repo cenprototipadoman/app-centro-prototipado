@@ -4,7 +4,7 @@
 const EQUIPOS_DB = {
     ender3: {
         id: "ender3",
-        name: "Impresora 3D Ender V3",
+        name: "Impresora 3D Ender-3 V3",
         category: "Fusión de Filamento (FDM)",
         shortDesc: "Impresora FDM de alta velocidad para prototipado rápido de piezas mecánicas y carcasas en PLA, PETG y TPU.",
         materials: "PLA, PETG, TPU, ABS (con cabina)",
@@ -34,15 +34,15 @@ const EQUIPOS_DB = {
     },
     laser: {
         id: "laser",
-        name: "Cortadora Láser CO2",
+        name: "Cortadora Láser CFL-CMA 1390",
         category: "Corte y Grabado",
-        shortDesc: "Cortadora por láser de CO2 para corte de contornos de alta precisión y grabado superficial de materiales orgánicos y plásticos.",
+        shortDesc: "Cortadora por láser de CO2 industrial CFL-CMA 1390 para corte de gran formato de alta precisión y grabado superficial de materiales orgánicos y plásticos.",
         materials: "Acrílico, MDF, Madera contrachapada, Cuero, Cartón (PROHIBIDO: PVC, Vinilo y Policarbonato por gases tóxicos)",
-        area: "900 x 600 mm (Tubo de 90W)",
+        area: "1300 x 900 mm (Tubo de 100W)",
         features: [
-            "Tubo láser de CO2 de 90W de potencia con refrigeración líquida activa.",
+            "Tubo láser de CO2 de 100W de potencia con refrigeración líquida activa (Chiller CW-5200).",
             "Cabezal de enfoque de alta resolución con puntero rojo de posicionamiento.",
-            "Extractor de humo industrial integrado y asistencia de aire comprimido.",
+            "Área de trabajo expandida de 1300 x 900 mm con mesa de elevación motorizada.",
             "Controlador digital Ruida compatible con software RDWorks y LightBurn."
         ],
         steps: [
@@ -124,16 +124,16 @@ const EQUIPOS_DB = {
     },
     "robotic-arm": {
         id: "robotic-arm",
-        name: "Brazo Robótico Industrial",
+        name: "Brazo Robótico szgh-P1500-B-6",
         category: "Automatización",
-        shortDesc: "Brazo robótico articulado industrial de 6 ejes para entrenamiento en programación, Pick-and-Place, y simulación de manufactura.",
-        materials: "Piezas de manipulación livianas (plástico, madera, metal ligero hasta 3 kg)",
-        area: "Alcance radial de hasta 700 mm (Carga útil 3 kg)",
+        shortDesc: "Brazo robótico articulado industrial szgh-P1500-B-6 de 6 ejes para entrenamiento en programación, Pick-and-Place, y simulación de manufactura a gran escala.",
+        materials: "Piezas de manipulación y herramientas con carga útil de hasta 6 kg",
+        area: "Alcance radial de hasta 1500 mm (Carga útil 6 kg)",
         features: [
-            "Brazo articulado de 6 grados de libertad (ejes de rotación continuos).",
-            "Controlador industrial con parada de emergencia redundante de doble canal.",
-            "Teach Pendant (consola de programación táctil) con joystick para control manual.",
-            "Brida final con conexión neumática y eléctrica para pinzas intercambiables."
+            "Brazo articulado de 6 grados de libertad con alcance radial de 1500 mm y carga útil de 6 kg.",
+            "Controlador industrial SZGH con parada de emergencia redundante de doble canal.",
+            "Teach Pendant SZGH de última generación para programación de trayectorias complejas.",
+            "Servomotores de alta precisión con encoders absolutos en cada articulación."
         ],
         steps: [
             "<strong>Inspección Visual:</strong> Verifica que no haya personas ni obstáculos dentro del radio de alcance del brazo. Comprueba las mangueras neumáticas.",
@@ -670,6 +670,15 @@ function closeAROverlay() {
 /* -------------------------------------------------------------
    SISTEMA DE HOLOGRAMAS 3D INTERACTIVOS (THREE.JS)
    ------------------------------------------------------------- */
+// Mapeo de archivos GLB para cada equipo
+const MODEL_FILES = {
+    ender3: "Modelos 3d/Ender-3 V3.glb",
+    laser: "Modelos 3d/CFL-CMA 1390.glb",
+    resin: "Modelos 3d/Anycubic Photon.glb",
+    "robotic-arm": "Modelos 3d/szgh-P1500-B-6.glb",
+    cnc: "Modelos 3d/CNC3018.glb"
+};
+
 function initHologram3D(machineId) {
     canvasContainer = document.getElementById("hologram-canvas-container");
     
@@ -696,6 +705,9 @@ function initHologram3D(machineId) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     canvasContainer.appendChild(renderer.domElement);
 
+    // Fondo de escena - color oscuro espacial
+    scene.background = new THREE.Color(0x0a0e27);
+
     // Luces
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
@@ -708,13 +720,101 @@ function initHologram3D(machineId) {
     pointLightGreen.position.set(-5, 3, -5);
     scene.add(pointLightGreen);
 
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(2, 5, 3);
+    scene.add(dirLight);
+
     // Agregar rejilla de base holográfica
     const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
     gridHelper.position.y = -0.5;
     scene.add(gridHelper);
 
-    // Crear geometría de máquina procedural holográfica
-    createProceduralHologram(machineId);
+    // Obtener referencias de UI para estado de carga
+    const glitchText = canvasContainer.querySelector(".hologram-glitch-text");
+    const subText = canvasContainer.querySelector(".hologram-sub-text");
+
+    // Verificar si el equipo tiene un modelo 3D asignado
+    if (MODEL_FILES[machineId]) {
+        if (glitchText) glitchText.innerText = "CARGANDO MODELO 3D...";
+        if (subText) subText.innerText = "Espere un momento, procesando geometría...";
+
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            MODEL_FILES[machineId],
+            (gltf) => {
+                if (glitchText) glitchText.innerText = "CONEXIÓN HOLOGRÁFICA ESTABLE";
+                if (subText) subText.innerText = "Gira la representación táctilmente";
+
+                const group = new THREE.Group();
+
+                // Aplicar estilo holográfico premium
+                gltf.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: 0x00a8ff,
+                            emissive: 0x001122,
+                            roughness: 0.4,
+                            metalness: 0.8,
+                            transparent: true,
+                            opacity: 0.6,
+                            side: THREE.DoubleSide
+                        });
+
+                        // Agregar malla de alambre brillante (wireframe) superpuesta
+                        const wireframe = new THREE.WireframeGeometry(child.geometry);
+                        const line = new THREE.LineSegments(wireframe);
+                        line.material.color.setHex(0x00f0ff);
+                        line.material.transparent = true;
+                        line.material.opacity = 0.25;
+                        child.add(line);
+                    }
+                });
+
+                // Aplicar rotaciones correctivas específicas según la máquina
+                if (machineId === "resin") {
+                    gltf.scene.rotation.x = Math.PI;
+                } else if (machineId === "robotic-arm") {
+                    gltf.scene.rotation.x = Math.PI;
+                    gltf.scene.rotation.z = Math.PI;
+                } else if (machineId === "ender3") {
+                    gltf.scene.rotation.x = -Math.PI / 2;
+                }
+
+                // Forzar actualización de matrices antes de calcular la bounding box
+                gltf.scene.updateMatrixWorld(true);
+
+                // Centrar y escalar automáticamente usando la caja delimitadora (post-rotación)
+                const box = new THREE.Box3().setFromObject(gltf.scene);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const targetSize = 2.5;
+                const scale = targetSize / (maxDim || 1);
+
+                gltf.scene.scale.set(scale, scale, scale);
+
+                // Alinear el suelo a y = -0.5 (sobre la rejilla) y centrar en X/Z
+                const yOffset = -0.5 - (box.min.y * scale);
+                gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
+
+                group.add(gltf.scene);
+                currentMesh = group;
+                scene.add(currentMesh);
+            },
+            undefined,
+            (error) => {
+                console.error("Error cargando modelo GLB:", error, "Usando fallback procedimental.");
+                if (glitchText) glitchText.innerText = "FALLBACK HOLOGRÁFICO ACTIVO";
+                if (subText) subText.innerText = "Gira la representación táctilmente";
+                createProceduralHologram(machineId);
+            }
+        );
+    } else {
+        createProceduralHologram(machineId);
+    }
 
     // Interacción táctil para rotar el modelo
     let isDragging = false;
