@@ -196,7 +196,6 @@ let isFlashlightOn = false;
 
 // Variables de Three.js para la visualización holográfica
 let scene, camera, renderer, animationFrameId;
-let orbitControls = null;
 let currentMesh = null;
 let canvasContainer = null;
 
@@ -774,7 +773,6 @@ function closeAROverlay() {
         renderer = null;
         currentMesh = null;
         reticleMesh = null;
-        orbitControls = null;
     }
 
     // Reiniciar el escaner de cámara si estamos en la vista de escaneo
@@ -857,7 +855,6 @@ async function startARCamera(machineId, forceFallback = false) {
             newBtn.onclick = async () => {
                 newBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span> CARGANDO...</span>';
                 try {
-                    arMode = 'webxr'; // Cambiar el modo antes de iniciar WebXR
                     await startWebXRSession(machineId);
                 } catch (err) {
                     console.warn("Fallo al iniciar sesión WebXR tras toque de usuario, usando fallback:", err);
@@ -866,11 +863,6 @@ async function startARCamera(machineId, forceFallback = false) {
                 }
             };
         }
-        
-        // Mostrar el modelo en modo de vista previa antes de entrar a AR
-        arMode = 'preview';
-        initHologram3D(machineId);
-        
         return;
     }
 
@@ -952,6 +944,7 @@ async function startWebXRSession(machineId) {
     const videoBg = document.getElementById("ar-camera-bg");
     if (videoBg) videoBg.classList.add("hidden");
 
+    // Mostrar el botón para anclar el modelo
     // Mostrar el botón para anclar el modelo
     const btnArPlace = document.getElementById("btn-ar-place");
     if (btnArPlace) {
@@ -1067,26 +1060,29 @@ function initHologram3D(machineId) {
     }
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
+    // Dimensiones
+    const width = canvasContainer.clientWidth || window.innerWidth;
+    const height = canvasContainer.clientHeight || (window.innerHeight * 0.4);
+
     // Escena
     scene = new THREE.Scene();
 
     // Cámara
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    if (arMode === 'webxr' || arMode === 'camera') {
+    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    if (arMode !== 'none') {
         // En AR, la cámara se sitúa a nivel de los ojos (1.6m) y mira hacia enfrente (z = -2)
         camera.position.set(0, 1.6, 0);
         camera.lookAt(0, 1.2, -2);
     } else {
-        // Visor holográfico clásico y preview
-        camera.position.set(0, 1.5, 3.5);
-        camera.lookAt(0, 0, 0);
+        // Visor holográfico clásico
+        camera.position.set(0, 4, 8);
+        camera.lookAt(0, 0.5, 0);
     }
 
     // Renderizador con soporte transparente
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = (arMode === 'webxr');
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     if (arMode !== 'none') {
         renderer.setClearColor(0x000000, 0); // transparente
     }
@@ -1103,17 +1099,20 @@ function initHologram3D(machineId) {
     const ambientLight = new THREE.AmbientLight(0xffffff, arMode !== 'none' ? 0.7 : 0.5);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+    const pointLight = new THREE.PointLight(0x00f0ff, arMode !== 'none' ? 1.8 : 1.5, 20);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);
+    
+    const pointLightGreen = new THREE.PointLight(0x94b43b, arMode !== 'none' ? 1.2 : 1.0, 20);
+    pointLightGreen.position.set(-5, 3, -5);
+    scene.add(pointLightGreen);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, arMode !== 'none' ? 1.5 : 1.0);
     dirLight.position.set(2, 5, 3);
     scene.add(dirLight);
 
-    // Solo agregar OrbitControls si no estamos en modos fijos de cámara/AR
-    if (arMode === 'none' || arMode === 'preview') {
-        orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
-        orbitControls.enableDamping = true;
-        orbitControls.dampingFactor = 0.05;
-        
-        // Agregar rejilla de base holográfica
+    // Agregar rejilla de base holográfica solo en visor clásico
+    if (arMode === 'none') {
         const gridHelper = new THREE.GridHelper(6, 12, 0x00f0ff, 0x004455);
         gridHelper.position.y = -0.5;
         scene.add(gridHelper);
@@ -1208,7 +1207,6 @@ function initHologram3D(machineId) {
                 let targetSize = 2.5; // Visor normal
                 if (arMode === 'webxr') targetSize = 1.0;
                 else if (arMode === 'camera') targetSize = 0.8;
-                else if (arMode === 'preview') targetSize = 1.4; // Proporcional a la pantalla antes de AR
                 
                 const scale = targetSize / (maxDim || 1);
 
@@ -1219,10 +1217,6 @@ function initHologram3D(machineId) {
                     // Colocar perfectamente frente a la cámara
                     const yOffset = 1.0 - (box.min.y * scale) - (size.y * scale / 2);
                     gltf.scene.position.set(-center.x * scale, yOffset, -2.5 - center.z * scale);
-                } else if (arMode === 'preview') {
-                    // En vista previa, un poco más abajo para dar espacio al botón superior y que no se pierda
-                    const yOffset = -0.5 - (box.min.y * scale);
-                    gltf.scene.position.set(-center.x * scale, yOffset, -center.z * scale);
                 } else {
                     // En WebXR o visor normal, centrado en Z para alinearse al retículo o base
                     const yOffset = (arMode === 'webxr' ? 0.0 : -0.5) - (box.min.y * scale);
